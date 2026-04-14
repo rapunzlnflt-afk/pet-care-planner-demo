@@ -95,22 +95,8 @@
   <!-- DEMO MODE -->
   <script>
   var DEMO_MODE = true;
-  if (typeof DEMO_MODE !== 'undefined' && DEMO_MODE) {
-      var ls = Object.create(null);
-      try {
-          Object.defineProperty(window, 'localStorage', {
-              get: function(){ return {
-                  getItem: function(k){ return ls[k] || null; },
-                  setItem: function(k,v){ ls[k] = String(v); },
-                  removeItem: function(k){ delete ls[k]; },
-                  clear: function(){ ls = Object.create(null); },
-                  get length(){ return Object.keys(ls).length; },
-                  key: function(i){ return Object.keys(ls)[i] || null; }
-              }; },
-              configurable: true
-          });
-      } catch(e) {}
-  }
+  // Demo mode: clear all data on page load so each visit starts fresh
+  try { localStorage.clear(); } catch(e) {}
   </script>
 
   <!-- Demo banner -->
