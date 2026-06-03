@@ -6,7 +6,7 @@
   <title>Pawfolio — Try the Demo</title>
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.5.38">
+                          <meta name="app-version" content="3.5.39">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -2044,7 +2044,7 @@
     document.getElementById('backup-reminder').style.display = 'none';
   });
 
-  document.getElementById('import-data-input').addEventListener('change', e => {
+  document.getElementById('import-data-input')?.addEventListener('change', e => {
     const file = e.target.files[0]; if(!file) return;
     const reader = new FileReader();
     reader.onload = evt => {
