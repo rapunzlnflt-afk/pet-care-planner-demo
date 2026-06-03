@@ -6,7 +6,7 @@
   <title>Pawfolio — Try the Demo</title>
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.5.39">
+                          <meta name="app-version" content="3.5.42">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -67,6 +67,14 @@
       main { padding: 68px 12px 32px !important; width: 100% !important; }
       [style*="grid-template-columns:1fr 1fr"], [style*="grid-template-columns: 1fr 1fr"], [style*="grid-template-columns:repeat(2"], [style*="grid-template-columns:repeat(3"], [style*="display:grid"]:not(.stats-row) { grid-template-columns: 1fr !important; }
       .card { padding: 14px !important; }
+      /* Demo banner: compact on mobile so it doesn't cover the topbar */
+      #demo-banner { padding: 6px 10px !important; gap: 8px !important; flex-wrap: nowrap !important; }
+      #demo-banner span { font-size: 11px !important; line-height: 1.25 !important; text-align: left !important; }
+      #demo-banner a { font-size: 11px !important; padding: 5px 12px !important; }
+      /* Push the mobile topbar below the banner so the hamburger is reachable */
+      .mobile-topbar { top: 44px !important; z-index: 9998 !important; }
+      body { padding-top: 100px !important; }
+      aside { top: 100px !important; }
       .card .text-xs,
       .card .text-sm,
       .card [class*="text-xs"],
@@ -77,7 +85,8 @@
       .card p[style*="font-size: 12px"], .card span[style*="font-size: 12px"], .card div[style*="font-size: 12px"],
       .card p[style*="font-size:13px"], .card span[style*="font-size:13px"], .card div[style*="font-size:13px"],
       .card p[style*="font-size: 13px"], .card span[style*="font-size: 13px"], .card div[style*="font-size: 13px"] { font-size: 17px !important; line-height: 1.5 !important; }
-      .card .stat-label { font-size: 14px !important; }
+      .card .stat-label { font-size: 11px !important; letter-spacing: 0 !important; }
+      .stat-label { font-size: 11px !important; letter-spacing: 0 !important; }
     }
 
     /* Dark mode */
