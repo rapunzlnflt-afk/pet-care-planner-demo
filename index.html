@@ -6,7 +6,7 @@
   <title>Pawfolio — Try the Demo</title>
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.5.44">
+                          <meta name="app-version" content="3.6.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -47,6 +47,9 @@
     .progress-bar { background: #e2e8f0; border-radius: 99px; height: 8px; overflow: hidden; }
     .progress-fill { height: 100%; background: linear-gradient(135deg, var(--accent-color), var(--accent-color-2)); border-radius: 99px; transition: width 0.4s; }
     .delete-x { background: none; border: none; color: #5B5BD6; font-size: 14px; font-weight: 600; cursor: pointer; padding: 0 4px; line-height: 1; font-family: Arial, sans-serif; }
+    .med-filter-btn { background: transparent; border: 1.5px solid var(--border-color); color: var(--text-secondary); font-family: 'Karla', sans-serif; font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 999px; cursor: pointer; }
+    .med-filter-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
+    .med-filter-btn.active { background: rgba(91,91,214,0.1); border-color: var(--accent-color); color: var(--accent-color); }
 
     /* Mobile */
     .mobile-topbar { display: none; position: fixed; top: 0; left: 0; right: 0; height: 56px; background: linear-gradient(135deg, #5B5BD6 0%, #8B5BD6 50%, #4C4CC8 100%); border-bottom: 1px solid rgba(255,255,255,0.15); align-items: center; padding: 0 16px; z-index: 1000; gap: 12px; }
@@ -474,7 +477,14 @@
     <section id="tab-vaccinations" class="tab-content">
      <h2 class="font-heading text-2xl font-bold text-primary mb-4">Vaccinations</h2>
      <div class="card p-5 mb-5" style="border-top:4px solid var(--accent-color);">
-      <h3 class="font-heading text-base font-bold text-primary mb-4">Log a Vaccination</h3>
+      <h3 id="vacc-form-title" class="font-heading text-base font-bold text-primary mb-4">Log a Vaccination</h3>
+      <div id="vacc-edit-banner" style="display:none;background:linear-gradient(135deg,rgba(91,91,214,0.12),rgba(91,91,214,0.04));border:1px solid #5B5BD6;border-radius:8px;padding:10px 14px;margin:0 0 14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+       <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span style="background:#5B5BD6;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;flex-shrink:0;">EDITING</span>
+        <span id="vacc-edit-banner-label" class="font-body text-sm font-medium text-primary" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+       </div>
+       <button type="button" onclick="cancelVaccEdit()" style="background:transparent;border:1px solid #5B5BD6;color:#5B5BD6;font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;cursor:pointer;flex-shrink:0;">Cancel edit</button>
+      </div>
       <form id="vacc-form" class="space-y-4">
        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
@@ -527,7 +537,7 @@
          <input type="text" id="vacc-lot" placeholder="Optional">
         </div>
        </div>
-       <button type="submit" class="btn-primary px-4 py-2">Save Vaccination</button>
+       <button type="submit" id="vacc-submit-btn" class="btn-primary px-4 py-2">Save Vaccination</button>
       </form>
      </div>
      <div id="vaccinations-list" class="space-y-3"></div>
@@ -537,15 +547,29 @@
     <section id="tab-medications" class="tab-content">
      <h2 class="font-heading text-2xl font-bold text-primary mb-4">Medications</h2>
      <div class="card p-5 mb-5" style="border-top:4px solid var(--accent-color);">
-      <h3 class="font-heading text-base font-bold text-primary mb-4">Add a Medication</h3>
+      <h3 id="med-form-title" class="font-heading text-base font-bold text-primary mb-4">Add a Medication</h3>
+      <div id="med-edit-banner" style="display:none;background:linear-gradient(135deg,rgba(91,91,214,0.12),rgba(91,91,214,0.04));border:1px solid #5B5BD6;border-radius:8px;padding:10px 14px;margin:0 0 14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+       <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span style="background:#5B5BD6;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;flex-shrink:0;">EDITING</span>
+        <span id="med-edit-banner-label" class="font-body text-sm font-medium text-primary" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+       </div>
+       <button type="button" onclick="cancelMedEdit()" style="background:transparent;border:1px solid #5B5BD6;color:#5B5BD6;font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;cursor:pointer;flex-shrink:0;">Cancel edit</button>
+      </div>
       <form id="med-form" class="space-y-4">
+       <div>
+        <label class="block font-body text-sm text-secondary mb-1">Type *</label>
+        <select id="med-type" required onchange="handleMedType(this.value)">
+         <option value="medication">Medication</option>
+         <option value="supplement">Supplement</option>
+        </select>
+       </div>
        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
          <label class="block font-body text-sm text-secondary mb-1">Pet *</label>
          <select id="med-pet" required><option value="">Select pet...</option></select>
         </div>
         <div>
-         <label class="block font-body text-sm text-secondary mb-1">Medication *</label>
+         <label id="med-name-label" class="block font-body text-sm text-secondary mb-1">Medication *</label>
          <select id="med-name" required onchange="handleMedOther(this)">
           <option value="">Select medication...</option>
           <optgroup label="Flea, Tick & Heartworm">
@@ -597,12 +621,12 @@
         </div>
        </div>
        <div id="med-other-container" style="display:none;">
-        <label class="block font-body text-sm text-secondary mb-1">Medication Name</label>
+        <label id="med-other-label" class="block font-body text-sm text-secondary mb-1">Medication Name</label>
         <input type="text" id="med-other" placeholder="Enter medication name">
        </div>
        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
         <div>
-         <label class="block font-body text-sm text-secondary mb-1">Dosage</label>
+         <label id="med-dosage-label" class="block font-body text-sm text-secondary mb-1">Dosage</label>
          <input type="text" id="med-dosage" placeholder="e.g., 10mg">
         </div>
         <div>
@@ -625,20 +649,29 @@
        </div>
        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
-         <label class="block font-body text-sm text-secondary mb-1">Refill Date</label>
+         <label id="med-refill-label" class="block font-body text-sm text-secondary mb-1">Refill Date</label>
          <input type="date" id="med-refill">
         </div>
-        <div>
+        <div id="med-vet-wrap">
          <label class="block font-body text-sm text-secondary mb-1">Prescribing Vet</label>
          <input type="text" id="med-vet" placeholder="Vet name">
+        </div>
+        <div id="med-brand-wrap" style="display:none;">
+         <label class="block font-body text-sm text-secondary mb-1">Brand</label>
+         <input type="text" id="med-brand" placeholder="e.g., Nutramax Cosequin">
         </div>
        </div>
        <div>
         <label class="block font-body text-sm text-secondary mb-1">Notes</label>
         <input type="text" id="med-notes" placeholder="e.g., give with food, refrigerate">
        </div>
-       <button type="submit" class="btn-primary px-4 py-2">Save Medication</button>
+       <button type="submit" id="med-submit-btn" class="btn-primary px-4 py-2">Save Medication</button>
       </form>
+     </div>
+     <div id="med-filter" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <button type="button" class="med-filter-btn active" data-med-filter="all" onclick="setMedFilter('all')">All</button>
+      <button type="button" class="med-filter-btn" data-med-filter="medication" onclick="setMedFilter('medication')">Medications</button>
+      <button type="button" class="med-filter-btn" data-med-filter="supplement" onclick="setMedFilter('supplement')">Supplements</button>
      </div>
      <div id="medications-list" class="space-y-3"></div>
     </section>
@@ -1050,6 +1083,8 @@
   const fmt = n => '$' + (parseFloat(n)||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const fmtDate = d => { if(!d) return ''; const [y,m,day] = d.split('-'); return `${m}/${day}/${y}`; };
   const today = () => new Date().toISOString().slice(0,10);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  window.esc = esc;
 
   // ============ TAB NAVIGATION ============
   document.querySelectorAll('.sidebar-item').forEach(btn => {
@@ -1078,7 +1113,7 @@
   // ============ PET DROPDOWNS ============
   function refreshPetDropdowns() {
     const pets = getList('pets');
-    const opts = pets.map(p => `<option value="${p.__id}">${p.name} (${p.species})</option>`).join('');
+    const opts = pets.map(p => `<option value="${p.__id}">${esc(p.name)} (${esc(p.species)})</option>`).join('');
     const optsWithAll = `<option value="">All pets / General</option>` + opts;
     ['vet-pet','vacc-pet','med-pet','weight-pet'].forEach(id => {
       const el = document.getElementById(id);
@@ -1155,14 +1190,14 @@
     container.innerHTML = pets.map(p => {
       const age = p.dob ? Math.floor((Date.now() - new Date(p.dob)) / 31557600000) : null;
       const avatarHtml = p.photo
-        ? `<img src="${p.photo}" class="pet-avatar" alt="${p.name}">`
+        ? `<img src="${p.photo}" class="pet-avatar" alt="${esc(p.name)}">`
         : `<div class="pet-avatar-placeholder"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5B5BD6" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>`;
       return `<div class="card p-5" style="border-left:4px solid var(--accent-color);">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div style="display:flex;align-items:center;gap:12px;">
             ${avatarHtml}
             <div>
-              <h3 class="font-heading text-lg font-bold text-primary">${p.name} <span style="font-size:13px;font-weight:500;color:var(--text-secondary);">${p.species}${p.breed ? ' — ' + p.breed : ''}</span></h3>
+              <h3 class="font-heading text-lg font-bold text-primary">${esc(p.name)} <span style="font-size:13px;font-weight:500;color:var(--text-secondary);">${esc(p.species)}${p.breed ? ' — ' + esc(p.breed) : ''}</span></h3>
               ${age !== null ? `<p class="font-body text-sm text-secondary">${age} year${age!==1?'s':''} old · ${p.sex || ''}</p>` : ''}
             </div>
           </div>
@@ -1233,7 +1268,7 @@
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div>
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-              <span class="font-heading font-bold text-primary">${v.petName}</span>
+              <span class="font-heading font-bold text-primary">${esc(v.petName)}</span>
               <span style="background:rgba(91,91,214,0.1);color:#5B5BD6;font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;">${v.type}</span>
             </div>
             <p class="font-body text-sm text-secondary">${fmtDate(v.date)}${v.vet ? ' · ' + v.vet : ''}</p>
@@ -1278,47 +1313,159 @@
   });
   document.getElementById('vacc-form').addEventListener('submit', e => {
     e.preventDefault();
+    const form = e.target;
     const petId = parseFloat(document.getElementById('vacc-pet').value);
     const pet = getList('pets').find(p => p.__id === petId);
     let name = document.getElementById('vacc-name').value;
     if(name === 'Other') name = document.getElementById('vacc-other').value.trim();
-    addItem('vaccinations', {
+    const fields = {
       petId, petName: pet ? pet.name : '',
       name, date: document.getElementById('vacc-date').value,
       next: document.getElementById('vacc-next').value,
       vet: document.getElementById('vacc-vet').value,
       lot: document.getElementById('vacc-lot').value,
-    });
-    e.target.reset();
-    document.getElementById('vacc-other-container').style.display = 'none';
+    };
+    const editId = form.dataset.editId;
+    if(editId) {
+      const vaccs = getList('vaccinations');
+      const idx = vaccs.findIndex(v => String(v.__id) === String(editId));
+      if(idx >= 0) {
+        vaccs[idx] = Object.assign({}, vaccs[idx], fields);
+        saveList('vaccinations', vaccs);
+      }
+    } else {
+      addItem('vaccinations', fields);
+    }
+    cancelVaccEdit();
     refreshAll();
   });
+
+  // Load a vaccination back into the form. Used by every card, overdue or not, so an
+  // out-of-date record can be brought current instead of only deleted.
+  window.editVacc = id => {
+    const v = getList('vaccinations').find(x => String(x.__id) === String(id));
+    if(!v) return;
+    const form = document.getElementById('vacc-form');
+    form.dataset.editId = String(id);
+    document.getElementById('vacc-pet').value = v.petId || '';
+    const nameSel = document.getElementById('vacc-name');
+    const known = Array.prototype.some.call(nameSel.options, o => o.value === v.name && o.value !== 'Other');
+    nameSel.value = known ? v.name : 'Other';
+    document.getElementById('vacc-other').value = known ? '' : (v.name || '');
+    handleVaccOther(nameSel);
+    document.getElementById('vacc-date').value = v.date || '';
+    document.getElementById('vacc-next').value = v.next || '';
+    document.getElementById('vacc-vet').value = v.vet || '';
+    document.getElementById('vacc-lot').value = v.lot || '';
+    document.getElementById('vacc-form-title').textContent = 'Update Vaccination';
+    document.getElementById('vacc-submit-btn').textContent = 'Update Vaccination';
+    const banner = document.getElementById('vacc-edit-banner');
+    banner.style.display = 'flex';
+    document.getElementById('vacc-edit-banner-label').textContent = `${v.petName || ''} — ${v.name || ''} — given ${fmtDate(v.date)}`;
+    renderVaccinations();
+    form.scrollIntoView({behavior:'smooth', block:'center'});
+  };
+
+  window.cancelVaccEdit = () => {
+    const form = document.getElementById('vacc-form');
+    delete form.dataset.editId;
+    form.reset();
+    document.getElementById('vacc-other-container').style.display = 'none';
+    document.getElementById('vacc-form-title').textContent = 'Log a Vaccination';
+    document.getElementById('vacc-submit-btn').textContent = 'Save Vaccination';
+    document.getElementById('vacc-edit-banner').style.display = 'none';
+    renderVaccinations();
+  };
 
   function renderVaccinations() {
     const vaccs = getList('vaccinations').sort((a,b) => b.date.localeCompare(a.date));
     const el = document.getElementById('vaccinations-list');
     if(!vaccs.length) { el.innerHTML = '<p class="font-body text-sm text-secondary italic">No vaccinations logged yet.</p>'; return; }
+    const form = document.getElementById('vacc-form');
+    const editId = form ? form.dataset.editId : '';
+    const actionBtn = 'background:transparent;border:1px solid var(--border-color);color:var(--text-primary);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;';
+    const dangerBtn = 'background:transparent;border:1px solid #e53e3e;color:#e53e3e;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;';
     el.innerHTML = vaccs.map(v => {
       const daysUntil = v.next ? Math.ceil((new Date(v.next) - new Date()) / 86400000) : null;
-      const urgency = daysUntil !== null ? (daysUntil < 0 ? 'color:#e53e3e;' : daysUntil < 30 ? 'color:#f6a623;' : 'color:#48bb78;') : '';
-      return `<div class="card p-4" style="display:flex;justify-content:space-between;align-items:center;">
+      const overdue = daysUntil !== null && daysUntil < 0;
+      const urgency = daysUntil !== null ? (overdue ? 'color:#e53e3e;' : daysUntil < 30 ? 'color:#f6a623;' : 'color:#48bb78;') : '';
+      const isEditing = editId && String(editId) === String(v.__id);
+      return `<div class="card p-4" style="cursor:pointer;${isEditing ? 'box-shadow:0 0 0 2px #5B5BD6;border-color:#5B5BD6;' : ''}" onclick="editVacc(${v.__id})" title="Tap to update this vaccination">
         <div>
-          <p class="font-heading font-bold text-primary">${v.name}</p>
-          <p class="font-body text-sm text-secondary">${v.petName} · Given: ${fmtDate(v.date)}${v.vet ? ' · ' + v.vet : ''}</p>
-          ${v.next ? `<p class="font-body text-sm mt-1" style="${urgency}">Due: ${fmtDate(v.next)}${daysUntil !== null ? (daysUntil < 0 ? ' (overdue)' : ` (${daysUntil} days)`) : ''}</p>` : ''}
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <p class="font-heading font-bold text-primary">${esc(v.name)}</p>
+            ${overdue ? '<span style="background:#e53e3e;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;">Overdue</span>' : ''}
+            ${isEditing ? '<span style="background:#5B5BD6;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">EDITING</span>' : ''}
+          </div>
+          <p class="font-body text-sm text-secondary">${esc(v.petName)} · Given: ${fmtDate(v.date)}${v.vet ? ' · ' + esc(v.vet) : ''}</p>
+          ${v.next ? `<p class="font-body text-sm mt-1" style="${urgency}">Due: ${fmtDate(v.next)}${overdue ? ' (overdue)' : ` (${daysUntil} days)`}</p>` : ''}
           ${docChipsFor(v.petId, ['Vaccination Records'])}
         </div>
-        <button class="delete-x" onclick="deleteVacc(${v.__id})" title="Delete">✕</button>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-color);justify-content:flex-end;">
+          <button type="button" onclick="event.stopPropagation();editVacc(${v.__id})" style="${actionBtn}">✎ ${overdue ? 'Update due date' : 'Edit'}</button>
+          <button type="button" onclick="event.stopPropagation();deleteVacc(${v.__id})" style="${dangerBtn}">✕ Delete</button>
+        </div>
       </div>`;
     }).join('');
   }
 
-  window.deleteVacc = id => { if(confirm('Delete this vaccination record?')) { deleteItem('vaccinations', id); refreshAll(); } };
+  window.deleteVacc = id => {
+    if(!confirm('Delete this vaccination record?')) return;
+    const form = document.getElementById('vacc-form');
+    if(form && String(form.dataset.editId) === String(id)) cancelVaccEdit();
+    deleteItem('vaccinations', id);
+    refreshAll();
+  };
 
-  // ============ MEDICATIONS ============
+  // ============ MEDICATIONS & SUPPLEMENTS ============
+  const SUPPLEMENT_OPTIONS = {
+    'Joint & Mobility': ['Glucosamine / Chondroitin','Cosequin','Dasuquin','Green-Lipped Mussel','MSM'],
+    'Skin & Coat': ['Fish Oil (Omega-3)','Salmon Oil','Coconut Oil','Biotin'],
+    'Digestive': ['Probiotic','Digestive Enzymes','Pumpkin Fiber','Slippery Elm'],
+    'Calming': ['Calming Chews','L-Theanine','Melatonin','CBD Chews'],
+    'General Wellness': ['Multivitamin','Vitamin E','Cranberry (Urinary)','Milk Thistle (Liver)','Taurine'],
+  };
+  // Captured before any type switch so we can restore the original medication catalogue.
+  const MED_NAME_OPTIONS_HTML = document.getElementById('med-name').innerHTML;
+  const medIsSupplement = m => (m && m.type) === 'supplement';
+  const medTypeLabel = type => type === 'supplement' ? 'Supplement' : 'Medication';
+
   window.handleMedOther = sel => {
     document.getElementById('med-other-container').style.display = sel.value === 'Other' ? '' : 'none';
   };
+
+  // Swap the form between prescription wording (medication) and product wording (supplement).
+  window.handleMedType = type => {
+    const supp = type === 'supplement';
+    const nameSel = document.getElementById('med-name');
+    const keptName = nameSel.value;
+    nameSel.innerHTML = supp
+      ? `<option value="">Select supplement...</option>` +
+        Object.entries(SUPPLEMENT_OPTIONS).map(([group, names]) =>
+          `<optgroup label="${group}">${names.map(n => `<option value="${n}">${n}</option>`).join('')}</optgroup>`).join('') +
+        `<option value="Other">Other (enter below)</option>`
+      : MED_NAME_OPTIONS_HTML;
+    nameSel.value = Array.prototype.some.call(nameSel.options, o => o.value === keptName) ? keptName : '';
+    handleMedOther(nameSel);
+
+    document.getElementById('med-name-label').textContent = `${medTypeLabel(type)} *`;
+    document.getElementById('med-other-label').textContent = `${medTypeLabel(type)} Name`;
+    document.getElementById('med-other').placeholder = supp ? 'Enter supplement name' : 'Enter medication name';
+    document.getElementById('med-dosage-label').textContent = supp ? 'Serving Size' : 'Dosage';
+    document.getElementById('med-dosage').placeholder = supp ? 'e.g., 1 chew' : 'e.g., 10mg';
+    document.getElementById('med-refill-label').textContent = supp ? 'Reorder Date' : 'Refill Date';
+    document.getElementById('med-vet-wrap').style.display = supp ? 'none' : '';
+    document.getElementById('med-brand-wrap').style.display = supp ? '' : 'none';
+    updateMedFormLabels();
+  };
+
+  function updateMedFormLabels() {
+    const form = document.getElementById('med-form');
+    const label = medTypeLabel(document.getElementById('med-type').value);
+    const editing = !!form.dataset.editId;
+    document.getElementById('med-form-title').textContent = editing ? `Update ${label}` : `Add a ${label}`;
+    document.getElementById('med-submit-btn').textContent = `${editing ? 'Update' : 'Save'} ${label}`;
+  }
 
   // Pre-fill prescribing vet from pet's Primary Vet (only if empty)
   document.getElementById('med-pet').addEventListener('change', e => {
@@ -1330,47 +1477,150 @@
   });
   document.getElementById('med-form').addEventListener('submit', e => {
     e.preventDefault();
+    const form = e.target;
+    const type = document.getElementById('med-type').value;
     const petId = parseFloat(document.getElementById('med-pet').value);
     const pet = getList('pets').find(p => p.__id === petId);
     let name = document.getElementById('med-name').value;
     if(name === 'Other') name = document.getElementById('med-other').value.trim();
-    addItem('medications', {
+    const fields = {
       petId, petName: pet ? pet.name : '',
+      type,
       name, dosage: document.getElementById('med-dosage').value,
       frequency: document.getElementById('med-frequency').value,
       start: document.getElementById('med-start').value,
       refill: document.getElementById('med-refill').value,
-      vet: document.getElementById('med-vet').value,
+      vet: type === 'supplement' ? '' : document.getElementById('med-vet').value,
+      brand: type === 'supplement' ? document.getElementById('med-brand').value : '',
       notes: document.getElementById('med-notes').value,
-    });
-    e.target.reset();
-    document.getElementById('med-other-container').style.display = 'none';
+    };
+    const editId = form.dataset.editId;
+    if(editId) {
+      const meds = getList('medications');
+      const idx = meds.findIndex(m => String(m.__id) === String(editId));
+      if(idx >= 0) {
+        meds[idx] = Object.assign({}, meds[idx], fields);
+        saveList('medications', meds);
+      }
+    } else {
+      addItem('medications', fields);
+    }
+    cancelMedEdit();
     refreshAll();
   });
 
-  function renderMedications() {
-    const meds = getList('medications');
-    const el = document.getElementById('medications-list');
-    if(!meds.length) { el.innerHTML = '<p class="font-body text-sm text-secondary italic">No medications added yet.</p>'; return; }
-    el.innerHTML = meds.map(m => {
-      const daysToRefill = m.refill ? Math.ceil((new Date(m.refill) - new Date()) / 86400000) : null;
-      const refillUrgency = daysToRefill !== null ? (daysToRefill < 0 ? 'color:#e53e3e;' : daysToRefill < 7 ? 'color:#f6a623;' : '') : '';
-      return `<div class="card p-4">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div>
-            <p class="font-heading font-bold text-primary">${m.name}</p>
-            <p class="font-body text-sm text-secondary">${m.petName}${m.dosage ? ' · ' + m.dosage : ''}${m.frequency ? ' · ' + m.frequency : ''}</p>
-            ${m.vet ? `<p class="font-body text-sm text-secondary">Prescribed by: ${m.vet}</p>` : ''}
-            ${m.refill ? `<p class="font-body text-sm mt-1" style="${refillUrgency}">Refill: ${fmtDate(m.refill)}${daysToRefill !== null ? (daysToRefill < 0 ? ' (overdue)' : ` (${daysToRefill} days)`) : ''}</p>` : ''}
-            ${m.notes ? `<p class="font-body text-xs text-secondary mt-1 italic">${m.notes}</p>` : ''}
-          </div>
-          <button class="delete-x" onclick="deleteMed(${m.__id})" title="Delete">✕</button>
+  window.editMed = id => {
+    const m = getList('medications').find(x => String(x.__id) === String(id));
+    if(!m) return;
+    const form = document.getElementById('med-form');
+    form.dataset.editId = String(id);
+    const type = medIsSupplement(m) ? 'supplement' : 'medication';
+    document.getElementById('med-type').value = type;
+    handleMedType(type);
+    document.getElementById('med-pet').value = m.petId || '';
+    const nameSel = document.getElementById('med-name');
+    const known = Array.prototype.some.call(nameSel.options, o => o.value === m.name && o.value !== 'Other');
+    nameSel.value = known ? m.name : 'Other';
+    document.getElementById('med-other').value = known ? '' : (m.name || '');
+    handleMedOther(nameSel);
+    document.getElementById('med-dosage').value = m.dosage || '';
+    document.getElementById('med-frequency').value = m.frequency || 'Once daily';
+    document.getElementById('med-start').value = m.start || '';
+    document.getElementById('med-refill').value = m.refill || '';
+    document.getElementById('med-vet').value = m.vet || '';
+    document.getElementById('med-brand').value = m.brand || '';
+    document.getElementById('med-notes').value = m.notes || '';
+    updateMedFormLabels();
+    const banner = document.getElementById('med-edit-banner');
+    banner.style.display = 'flex';
+    document.getElementById('med-edit-banner-label').textContent = `${m.petName || ''} — ${m.name || ''}`;
+    renderMedications();
+    form.scrollIntoView({behavior:'smooth', block:'center'});
+  };
+
+  window.cancelMedEdit = () => {
+    const form = document.getElementById('med-form');
+    delete form.dataset.editId;
+    form.reset();
+    document.getElementById('med-other-container').style.display = 'none';
+    document.getElementById('med-edit-banner').style.display = 'none';
+    handleMedType(document.getElementById('med-type').value);
+    renderMedications();
+  };
+
+  let medFilter = 'all';
+  window.setMedFilter = value => {
+    medFilter = value;
+    document.querySelectorAll('.med-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.medFilter === value));
+    renderMedications();
+  };
+
+  function medCardHTML(m, editId) {
+    const supp = medIsSupplement(m);
+    const daysToRefill = m.refill ? Math.ceil((new Date(m.refill) - new Date()) / 86400000) : null;
+    const refillUrgency = daysToRefill !== null ? (daysToRefill < 0 ? 'color:#e53e3e;' : daysToRefill < 7 ? 'color:#f6a623;' : '') : '';
+    const isEditing = editId && String(editId) === String(m.__id);
+    const badge = supp
+      ? '<span style="background:rgba(16,185,129,0.12);color:#059669;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;">Supplement</span>'
+      : '<span style="background:rgba(91,91,214,0.1);color:#5B5BD6;font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;">Medication</span>';
+    const actionBtn = 'background:transparent;border:1px solid var(--border-color);color:var(--text-primary);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;';
+    const dangerBtn = 'background:transparent;border:1px solid #e53e3e;color:#e53e3e;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;';
+    return `<div class="card p-4" style="${isEditing ? 'box-shadow:0 0 0 2px #5B5BD6;border-color:#5B5BD6;' : ''}">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <p class="font-heading font-bold text-primary">${esc(m.name)}</p>
+          ${badge}
+          ${isEditing ? '<span style="background:#5B5BD6;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">EDITING</span>' : ''}
         </div>
-      </div>`;
-    }).join('');
+        <p class="font-body text-sm text-secondary">${esc(m.petName)}${m.dosage ? ' · ' + esc(m.dosage) : ''}${m.frequency ? ' · ' + esc(m.frequency) : ''}</p>
+        ${supp
+          ? (m.brand ? `<p class="font-body text-sm text-secondary">Brand: ${esc(m.brand)}</p>` : '')
+          : (m.vet ? `<p class="font-body text-sm text-secondary">Prescribed by: ${esc(m.vet)}</p>` : '')}
+        ${m.refill ? `<p class="font-body text-sm mt-1" style="${refillUrgency}">${supp ? 'Reorder' : 'Refill'}: ${fmtDate(m.refill)}${daysToRefill < 0 ? ' (overdue)' : ` (${daysToRefill} days)`}</p>` : ''}
+        ${m.notes ? `<p class="font-body text-xs text-secondary mt-1 italic">${esc(m.notes)}</p>` : ''}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-color);justify-content:flex-end;">
+        <button type="button" onclick="editMed(${m.__id})" style="${actionBtn}">✎ Edit</button>
+        <button type="button" onclick="deleteMed(${m.__id})" style="${dangerBtn}">✕ Delete</button>
+      </div>
+    </div>`;
   }
 
-  window.deleteMed = id => { if(confirm('Delete this medication?')) { deleteItem('medications', id); refreshAll(); } };
+  function renderMedications() {
+    const all = getList('medications');
+    const el = document.getElementById('medications-list');
+    const form = document.getElementById('med-form');
+    const editId = form ? form.dataset.editId : '';
+    const meds = all.filter(m => medFilter === 'all' || (medIsSupplement(m) ? 'supplement' : 'medication') === medFilter);
+    if(!meds.length) {
+      const empty = medFilter === 'supplement' ? 'No supplements added yet.'
+        : medFilter === 'medication' ? 'No medications added yet.'
+        : 'No medications or supplements added yet.';
+      el.innerHTML = `<p class="font-body text-sm text-secondary italic">${empty}</p>`;
+      return;
+    }
+    if(medFilter !== 'all') {
+      el.innerHTML = meds.map(m => medCardHTML(m, editId)).join('');
+      return;
+    }
+    // "All" groups by type so the two kinds stay visually separated.
+    const groups = [
+      ['Medications', meds.filter(m => !medIsSupplement(m))],
+      ['Supplements', meds.filter(medIsSupplement)],
+    ];
+    el.innerHTML = groups.filter(([, items]) => items.length).map(([heading, items]) =>
+      `<h3 class="font-heading text-sm font-bold text-primary" style="margin:8px 0;">${heading}</h3>
+       <div class="space-y-3" style="margin-bottom:18px;">${items.map(m => medCardHTML(m, editId)).join('')}</div>`).join('');
+  }
+
+  window.deleteMed = id => {
+    const m = getList('medications').find(x => String(x.__id) === String(id));
+    if(!confirm(`Delete this ${medIsSupplement(m) ? 'supplement' : 'medication'}?`)) return;
+    const form = document.getElementById('med-form');
+    if(form && String(form.dataset.editId) === String(id)) cancelMedEdit();
+    deleteItem('medications', id);
+    refreshAll();
+  };
 
   // ============ WEIGHT TRACKER ============
   document.getElementById('weight-form').addEventListener('submit', e => {
@@ -1444,7 +1694,7 @@
     const currentVal = filterEl ? filterEl.value : '';
     if(filterEl) {
       const pets = getList('pets');
-      filterEl.innerHTML = '<option value="">All pets</option>' + '<option value="__none__">General / unassigned</option>' + pets.map(p => `<option value="${p.__id}">${p.name} (${p.species})</option>`).join('');
+      filterEl.innerHTML = '<option value="">All pets</option>' + '<option value="__none__">General / unassigned</option>' + pets.map(p => `<option value="${p.__id}">${esc(p.name)} (${esc(p.species)})</option>`).join('');
       // Restore prior selection if pet still exists
       if(currentVal === '__none__' || currentVal === '' || pets.some(p => String(p.__id) === currentVal)) {
         filterEl.value = currentVal;
@@ -1490,19 +1740,20 @@
     const sitterData = JSON.parse(localStorage.getItem('petSitterInfo') || '{}');
     section.innerHTML = pets.map(p => `
       <div class="card p-5 mb-4" style="border-top:4px solid var(--accent-color-2);">
-        <h3 class="font-heading text-sm font-bold text-primary mb-3">${p.name} (${p.species})</h3>
+        <h3 class="font-heading text-sm font-bold text-primary mb-3">${esc(p.name)} (${esc(p.species)})</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div><label class="block font-body text-xs text-secondary mb-1">Feeding Schedule</label><input type="text" id="sitter-feed-${p.__id}" value="${(sitterData['sitter-feed-'+p.__id]||'')}" placeholder="e.g., 1 cup twice daily at 7am & 6pm"></div>
-          <div><label class="block font-body text-xs text-secondary mb-1">Food Brand</label><input type="text" id="sitter-food-${p.__id}" value="${(sitterData['sitter-food-'+p.__id]||'')}" placeholder="e.g., Royal Canin Adult"></div>
-          <div><label class="block font-body text-xs text-secondary mb-1">Walk Schedule</label><input type="text" id="sitter-walk-${p.__id}" value="${(sitterData['sitter-walk-'+p.__id]||'')}" placeholder="e.g., 3x daily, 15 min each"></div>
-          <div><label class="block font-body text-xs text-secondary mb-1">Medications (if any)</label><input type="text" id="sitter-meds-${p.__id}" value="${(sitterData['sitter-meds-'+p.__id]||'')}" placeholder="e.g., 1 Apoquel tablet with breakfast"></div>
+          <div><label class="block font-body text-xs text-secondary mb-1">Feeding Schedule</label><input type="text" id="sitter-feed-${p.__id}" value="${esc(sitterData['sitter-feed-'+p.__id]||'')}" placeholder="e.g., 1 cup twice daily at 7am & 6pm"></div>
+          <div><label class="block font-body text-xs text-secondary mb-1">Food Brand</label><input type="text" id="sitter-food-${p.__id}" value="${esc(sitterData['sitter-food-'+p.__id]||'')}" placeholder="e.g., Royal Canin Adult"></div>
+          <div><label class="block font-body text-xs text-secondary mb-1">Walk Schedule</label><input type="text" id="sitter-walk-${p.__id}" value="${esc(sitterData['sitter-walk-'+p.__id]||'')}" placeholder="e.g., 3x daily, 15 min each"></div>
+          <div><label class="block font-body text-xs text-secondary mb-1">Medications (if any)</label><input type="text" id="sitter-meds-${p.__id}" value="${esc(sitterData['sitter-meds-'+p.__id]||'')}" placeholder="e.g., 1 Apoquel tablet with breakfast"></div>
+          <div><label class="block font-body text-xs text-secondary mb-1">Supplements (if any)</label><input type="text" id="sitter-supps-${p.__id}" value="${esc(sitterData['sitter-supps-'+p.__id]||'')}" placeholder="e.g., 1 joint chew with dinner"></div>
         </div>
         <div style="margin-top:10px;"><label class="block font-body text-xs text-secondary mb-1">Behavioral Notes</label><textarea id="sitter-behavior-${p.__id}" rows="2" placeholder="Fears, quirks, commands they know, do not feed..."></textarea></div>
       </div>`).join('');
     // Restore values
     setTimeout(() => {
       pets.forEach(p => {
-        ['sitter-feed-','sitter-food-','sitter-walk-','sitter-meds-','sitter-behavior-'].forEach(prefix => {
+        ['sitter-feed-','sitter-food-','sitter-walk-','sitter-meds-','sitter-supps-','sitter-behavior-'].forEach(prefix => {
           const el = document.getElementById(prefix + p.__id);
           if(el && sitterData[prefix + p.__id]) el.value = sitterData[prefix + p.__id];
         });
@@ -1524,7 +1775,7 @@
       'sitter-instructions': (document.getElementById('sitter-instructions')||{}).value||'',
     };
     pets.forEach(p => {
-      ['sitter-feed-','sitter-food-','sitter-walk-','sitter-meds-','sitter-behavior-'].forEach(prefix => {
+      ['sitter-feed-','sitter-food-','sitter-walk-','sitter-meds-','sitter-supps-','sitter-behavior-'].forEach(prefix => {
         const el = document.getElementById(prefix + p.__id);
         if(el) data[prefix + p.__id] = el.value;
       });
@@ -1567,7 +1818,7 @@
       <!-- Per-pet sections -->
       ${pets.map(p => {
         const avatar = p.photo
-          ? `<img src="${p.photo}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid rgba(91,91,214,0.3);flex-shrink:0;" alt="${p.name}">`
+          ? `<img src="${p.photo}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid rgba(91,91,214,0.3);flex-shrink:0;" alt="${esc(p.name)}">`
           : `<div style="width:52px;height:52px;border-radius:50%;background:rgba(91,91,214,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(91,91,214,0.2);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5B5BD6" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>`;
         return `
         <div class="sitter-section-preview">
@@ -1575,8 +1826,8 @@
             <div style="display:flex;align-items:center;gap:10px;">
               ${avatar}
               <div>
-                <h3 class="font-heading text-sm font-bold text-primary">${p.name}</h3>
-                <p class="font-body text-xs text-secondary">${p.species}${p.breed?' · '+p.breed:''}</p>
+                <h3 class="font-heading text-sm font-bold text-primary">${esc(p.name)}</h3>
+                <p class="font-body text-xs text-secondary">${esc(p.species)}${p.breed?' · '+esc(p.breed):''}</p>
                 ${p.microchip?`<p class="font-body text-xs text-secondary">Microchip: ${p.microchip}</p>`:''}
                 ${p.vet?`<p class="font-body text-xs text-secondary">Primary vet: ${p.vet}</p>`:''}
                 ${p.allergies?`<p class="font-body text-xs" style="color:#e53e3e;font-weight:600;">⚠ Allergies: ${p.allergies}</p>`:''}
@@ -1585,11 +1836,12 @@
 
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-            <div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Feeding Schedule</p><p class="font-body text-sm font-medium text-primary">${data['sitter-feed-'+p.__id]||'—'}</p></div>
-            <div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Food Brand</p><p class="font-body text-sm font-medium text-primary">${data['sitter-food-'+p.__id]||'—'}</p></div>
-            <div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Walk Schedule</p><p class="font-body text-sm font-medium text-primary">${data['sitter-walk-'+p.__id]||'—'}</p></div>
-            <div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Medications</p><p class="font-body text-sm font-medium text-primary">${data['sitter-meds-'+p.__id]||'—'}</p></div>
-            ${data['sitter-behavior-'+p.__id]?`<div style="grid-column:span 2;"><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Behavioral Notes</p><p class="font-body text-sm text-primary">${data['sitter-behavior-'+p.__id]}</p></div>`:''}
+            <div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Feeding Schedule</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-feed-'+p.__id])||'—'}</p></div>
+            <div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Food Brand</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-food-'+p.__id])||'—'}</p></div>
+            <div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Walk Schedule</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-walk-'+p.__id])||'—'}</p></div>
+            <div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Medications</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-meds-'+p.__id])||'—'}</p></div>
+            <div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Supplements</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-supps-'+p.__id])||'—'}</p></div>
+            ${data['sitter-behavior-'+p.__id]?`<div style="grid-column:span 2;"><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Behavioral Notes</p><p class="font-body text-sm text-primary">${esc(data['sitter-behavior-'+p.__id])}</p></div>`:''}
           </div>
         </div>`;
       }).join('')}
@@ -1712,20 +1964,21 @@
       <div class="field"><div class="label">Emergency Vet (24hr)</div><div class="value">${data['sitter-emerg-vet']||''}</div></div>
     </div>
     ${pets.map(p => `
-    <h2>${p.name} (${p.species}${p.breed ? ' — ' + p.breed : ''})</h2>
+    <h2>${esc(p.name)} (${esc(p.species)}${p.breed ? ' — ' + esc(p.breed) : ''})</h2>
     <div class="pet-section">
       ${p.photo ? `<img src="${p.photo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;float:right;margin:0 0 12px 12px;border:3px solid #5B5BD6;">` : ''}
       ${p.allergies ? `<p style="color:#e53e3e;font-weight:700;">⚠ Allergies: ${p.allergies}</p>` : ''}
       ${(p.microchip || p.vet) ? `<div class="grid" style="margin-bottom:8px;">${p.microchip ? `<div class="field"><div class="label">Microchip</div><div class="value">${p.microchip}</div></div>` : ''}${p.vet ? `<div class="field"><div class="label">Primary Vet</div><div class="value">${p.vet}</div></div>` : ''}</div>` : ''}
       <div class="grid">
-        <div class="field"><div class="label">Feeding Schedule</div><div class="value">${data['sitter-feed-'+p.__id]||''}</div></div>
-        <div class="field"><div class="label">Food Brand</div><div class="value">${data['sitter-food-'+p.__id]||''}</div></div>
-        <div class="field"><div class="label">Walk Schedule</div><div class="value">${data['sitter-walk-'+p.__id]||''}</div></div>
-        <div class="field"><div class="label">Medications</div><div class="value">${data['sitter-meds-'+p.__id]||''}</div></div>
+        <div class="field"><div class="label">Feeding Schedule</div><div class="value">${esc(data['sitter-feed-'+p.__id])}</div></div>
+        <div class="field"><div class="label">Food Brand</div><div class="value">${esc(data['sitter-food-'+p.__id])}</div></div>
+        <div class="field"><div class="label">Walk Schedule</div><div class="value">${esc(data['sitter-walk-'+p.__id])}</div></div>
+        <div class="field"><div class="label">Medications</div><div class="value">${esc(data['sitter-meds-'+p.__id])}</div></div>
+        <div class="field"><div class="label">Supplements</div><div class="value">${esc(data['sitter-supps-'+p.__id])}</div></div>
       </div>
-      ${data['sitter-behavior-'+p.__id] ? `<div class="field" style="margin-top:8px;"><div class="label">Behavioral Notes</div><div class="value">${data['sitter-behavior-'+p.__id]}</div></div>` : ''}
+      ${data['sitter-behavior-'+p.__id] ? `<div class="field" style="margin-top:8px;"><div class="label">Behavioral Notes</div><div class="value">${esc(data['sitter-behavior-'+p.__id])}</div></div>` : ''}
     </div>`).join('')}
-    ${data['sitter-instructions'] ? `<h2>Additional Instructions</h2><p>${data['sitter-instructions']}</p>` : ''}
+    ${data['sitter-instructions'] ? `<h2>Additional Instructions</h2><p>${esc(data['sitter-instructions'])}</p>` : ''}
     </body></html>`);
     win.document.close();
     win.print();
@@ -1758,7 +2011,7 @@
             <span class="font-heading font-bold text-primary">${d.name}</span>
             <span style="background:rgba(91,91,214,0.1);color:#5B5BD6;font-size:11px;padding:2px 8px;border-radius:12px;">${d.type}</span>
           </div>
-          <p class="font-body text-sm text-secondary">${d.petName}${d.notes ? ' · ' + d.notes : ''}</p>
+          <p class="font-body text-sm text-secondary">${esc(d.petName)}${d.notes ? ' · ' + esc(d.notes) : ''}</p>
           ${d.link ? `<a href="${d.link}" target="_blank" class="font-body text-sm" style="color:var(--accent-color);">View Document &rarr;</a>` : ''}
         </div>
         <button class="delete-x" onclick="deleteDoc(${d.__id})" title="Delete">✕</button>
@@ -1787,14 +2040,14 @@
           const age = p.dob ? Math.floor((Date.now() - new Date(p.dob)) / 31557600000) : null;
           const latestWeight = getList('weights').filter(w => w.petId === p.__id).sort((a,b) => b.date.localeCompare(a.date))[0];
           const ov_avatar = p.photo
-            ? `<img src="${p.photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(91,91,214,0.3);flex-shrink:0;" alt="${p.name}">`
+            ? `<img src="${p.photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(91,91,214,0.3);flex-shrink:0;" alt="${esc(p.name)}">`
             : `<div style="width:48px;height:48px;border-radius:50%;background:rgba(91,91,214,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(91,91,214,0.2);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5BD6" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>`;
           return `<div class="card p-4" style="border-top:4px solid var(--accent-color);">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
               ${ov_avatar}
               <div>
-                <h3 class="font-heading text-lg font-bold" style="color:var(--accent-color);">${p.name}</h3>
-                <p class="font-body text-sm text-secondary">${p.species}${p.breed ? ' · ' + p.breed : ''}${age !== null ? ' · ' + age + ' yr' + (age!==1?'s':'') : ''}</p>
+                <h3 class="font-heading text-lg font-bold" style="color:var(--accent-color);">${esc(p.name)}</h3>
+                <p class="font-body text-sm text-secondary">${esc(p.species)}${p.breed ? ' · ' + esc(p.breed) : ''}${age !== null ? ' · ' + age + ' yr' + (age!==1?'s':'') : ''}</p>
               </div>
             </div>
             ${latestWeight ? `<p class="font-body text-sm text-primary"><strong>${latestWeight.lbs} lbs</strong> as of ${fmtDate(latestWeight.date)}</p>` : ''}
@@ -1814,7 +2067,7 @@
     });
     getList('medications').filter(m => m.refill).forEach(m => {
       const days = Math.ceil((new Date(m.refill) - now) / 86400000);
-      if(days <= 30) reminders.push({ type: 'Medication Refill', name: m.name, pet: m.petName, days, date: m.refill });
+      if(days <= 30) reminders.push({ type: medIsSupplement(m) ? 'Supplement Reorder' : 'Medication Refill', name: m.name, pet: m.petName, days, date: m.refill });
     });
     getList('vet-visits').map(v => ({...v, next: v.next || v.date})).filter(v => v.next).forEach(v => {
       const days = Math.ceil((new Date(v.next) - now) / 86400000);
@@ -1827,11 +2080,12 @@
       remindersEl.innerHTML = reminders.map(r => {
         const color = r.days < 0 ? '#e53e3e' : r.days < 7 ? '#f6a623' : '#48bb78';
         const label = r.days < 0 ? 'Overdue' : r.days === 0 ? 'Today' : `${r.days} days`;
-        const tabMap = { 'Vaccination':'vaccinations', 'Medication Refill':'medications', 'Vet Appointment':'vet-visits' };
+        const tabMap = { 'Vaccination':'vaccinations', 'Medication Refill':'medications', 'Supplement Reorder':'medications', 'Vet Appointment':'vet-visits' };
+        const tabTitles = { 'vaccinations':'Vaccinations', 'medications':'Medications', 'vet-visits':'Vet Visits' };
         const target = tabMap[r.type];
-        return `<div onclick="window.goToTab('${target}')" title="View in ${r.type === 'Medication Refill' ? 'Medications' : r.type === 'Vaccination' ? 'Vaccinations' : 'Vet Visits'}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--border-color);cursor:pointer;border-radius:6px;transition:background 0.15s;" onmouseover="this.style.background='rgba(91,91,214,0.08)'" onmouseout="this.style.background='transparent'">
+        return `<div onclick="window.goToTab('${target}')" title="View in ${tabTitles[target]}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--border-color);cursor:pointer;border-radius:6px;transition:background 0.15s;" onmouseover="this.style.background='rgba(91,91,214,0.08)'" onmouseout="this.style.background='transparent'">
           <div>
-            <p class="font-body text-sm font-medium text-primary">${r.pet} — ${r.name}</p>
+            <p class="font-body text-sm font-medium text-primary">${esc(r.pet)} — ${esc(r.name)}</p>
             <p class="font-body text-xs text-secondary">${r.type} · ${fmtDate(r.date)} · <span style="color:#5B5BD6;">View →</span></p>
           </div>
           <span style="background:${color};color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;flex-shrink:0;margin-left:8px;">${label}</span>
@@ -3475,7 +3729,8 @@ try {
       });
       (getList('medications')||[]).filter(function(m){return m.refill;}).forEach(function(m){
         var days = Math.ceil((new Date(m.refill) - now) / 86400000);
-        if(days <= 30) reminders.push({type:'Medication Refill', name:m.name, pet:m.petName, days:days, date:m.refill, time:'', tab:'medications'});
+        var medType = (m.type === 'supplement') ? 'Supplement Reorder' : 'Medication Refill';
+        if(days <= 30) reminders.push({type:medType, name:m.name, pet:m.petName, days:days, date:m.refill, time:'', tab:'medications'});
       });
       (getList('vet-visits')||[]).forEach(function(v){
         // Choose appointment date+time (v.date/v.time) OR follow-up date+time (v.next/v.nextTime)
@@ -3500,13 +3755,14 @@ try {
       var color = r.days < 0 ? '#e53e3e' : r.days < 7 ? '#f6a623' : '#48bb78';
       var label = r.days < 0 ? 'Overdue' : r.days === 0 ? 'Today' : (r.days + ' days');
       var timeBit = r.time ? (' · ' + fmtTime(r.time)) : '';
-      var titleAttr = 'View in ' + (r.type==='Medication Refill'?'Medications':(r.type==='Vaccination'?'Vaccinations':'Vet Visits'));
+      var tabTitles = {'vaccinations':'Vaccinations','medications':'Medications','vet-visits':'Vet Visits'};
+      var titleAttr = 'View in ' + (tabTitles[r.tab] || '');
       var clickAttr = r.visitId
         ? 'window.pfGoToVetVisit('+r.visitId+')'
         : "window.goToTab('"+r.tab+"')";
       return '<div onclick="'+clickAttr+'" title="'+titleAttr+'" style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--border-color);cursor:pointer;border-radius:6px;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(91,91,214,0.08)\'" onmouseout="this.style.background=\'transparent\'">'+
         '<div>'+
-          '<p class="font-body text-sm font-medium text-primary">'+r.pet+' — '+r.name+'</p>'+
+          '<p class="font-body text-sm font-medium text-primary">'+esc(r.pet)+' — '+esc(r.name)+'</p>'+
           '<p class="font-body text-xs text-secondary">'+r.type+' · '+fmtDate(r.date)+timeBit+' · <span style="color:#5B5BD6;">View →</span></p>'+
         '</div>'+
         '<span style="background:'+color+';color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;flex-shrink:0;margin-left:8px;">'+label+'</span>'+
