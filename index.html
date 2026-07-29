@@ -6,7 +6,7 @@
   <title>Pawfolio — Try the Demo</title>
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.6.0">
+                          <meta name="app-version" content="3.6.1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -485,6 +485,7 @@
        </div>
        <button type="button" onclick="cancelVaccEdit()" style="background:transparent;border:1px solid #5B5BD6;color:#5B5BD6;font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;cursor:pointer;flex-shrink:0;">Cancel edit</button>
       </div>
+      <div id="vacc-overdue-hint" class="font-body text-sm text-primary" style="display:none;background:rgba(246,166,35,0.12);border:1px solid #f6a623;border-radius:8px;padding:10px 14px;margin:0 0 14px;"></div>
       <form id="vacc-form" class="space-y-4">
        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
@@ -1340,6 +1341,43 @@
     refreshAll();
   });
 
+  const parseYMD = s => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s == null ? '' : s));
+    if(!m) return null;
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3] ? d : null;
+  };
+  const toYMD = d => d.toISOString().slice(0,10);
+  const addMonths = (d, n) => {
+    const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1));
+    // Clamp so Jan 31 + 1 month lands on the last day of February instead of overflowing.
+    const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+    target.setUTCDate(Math.min(d.getUTCDate(), lastDay));
+    return target;
+  };
+  // Whole months between two dates, or 0 if the gap isn't a clean number of months.
+  const wholeMonthsBetween = (from, to) => {
+    const n = (to.getUTCFullYear() - from.getUTCFullYear()) * 12 + (to.getUTCMonth() - from.getUTCMonth());
+    return n > 0 && addMonths(from, n).getTime() === to.getTime() ? n : 0;
+  };
+
+  // An overdue record is edited to log a freshly administered shot, so prefill today plus
+  // the record's own interval rather than the stale stored dates. Returns null when the
+  // record isn't overdue — those edits are typo corrections and must keep their values.
+  function overdueVaccPrefill(v) {
+    const start = parseYMD(today());
+    const due = parseYMD(v.next);
+    if(!start || !due || due.getTime() >= start.getTime()) return null;
+    const given = parseYMD(v.date);
+    const months = given ? wholeMonthsBetween(given, due) : 0;
+    const days = given ? Math.round((due - given) / 86400000) : 0;
+    let next;
+    if(months) next = addMonths(start, months);
+    else if(days > 0) next = new Date(start.getTime() + days * 86400000);
+    else next = addMonths(start, 12);
+    return { date: toYMD(start), next: toYMD(next) };
+  }
+
   // Load a vaccination back into the form. Used by every card, overdue or not, so an
   // out-of-date record can be brought current instead of only deleted.
   window.editVacc = id => {
@@ -1353,8 +1391,12 @@
     nameSel.value = known ? v.name : 'Other';
     document.getElementById('vacc-other').value = known ? '' : (v.name || '');
     handleVaccOther(nameSel);
-    document.getElementById('vacc-date').value = v.date || '';
-    document.getElementById('vacc-next').value = v.next || '';
+    const prefill = overdueVaccPrefill(v);
+    document.getElementById('vacc-date').value = prefill ? prefill.date : (v.date || '');
+    document.getElementById('vacc-next').value = prefill ? prefill.next : (v.next || '');
+    const hint = document.getElementById('vacc-overdue-hint');
+    hint.style.display = prefill ? '' : 'none';
+    if(prefill) hint.innerHTML = `Overdue — we've filled in today's date (${esc(fmtDate(prefill.date))}) and the next due date (${esc(fmtDate(prefill.next))}). Change them if that's not right.`;
     document.getElementById('vacc-vet').value = v.vet || '';
     document.getElementById('vacc-lot').value = v.lot || '';
     document.getElementById('vacc-form-title').textContent = 'Update Vaccination';
@@ -1374,6 +1416,7 @@
     document.getElementById('vacc-form-title').textContent = 'Log a Vaccination';
     document.getElementById('vacc-submit-btn').textContent = 'Save Vaccination';
     document.getElementById('vacc-edit-banner').style.display = 'none';
+    document.getElementById('vacc-overdue-hint').style.display = 'none';
     renderVaccinations();
   };
 
