@@ -2,7 +2,7 @@
 
 The cut-down demo of Pawfolio, linked from the Etsy listing so prospective buyers can try it before purchase.
 
-**Live demo URL:** https://rapunzlnflt-afk.github.io/pet-care-planner-demo/
+**Live demo URL:** https://cleartrackapps.com/pet-care-planner-demo/
 **Full app repo:** https://github.com/rapunzlnflt-afk/pet-care-planner
 
 ## This repo is NOT auto-synced with the full app
