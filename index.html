@@ -6,7 +6,7 @@
   <title>Pawfolio — Try the Demo</title>
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.6.1">
+                          <meta name="app-version" content="3.6.2">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -1114,7 +1114,11 @@
   // ============ PET DROPDOWNS ============
   function refreshPetDropdowns() {
     const pets = getList('pets');
-    const opts = pets.map(p => `<option value="${p.__id}">${esc(p.name)} (${esc(p.species)})</option>`).join('');
+    // v3.6.2: with exactly one pet there is nothing to pick, so preselect it.
+    // Written as the `selected` attribute rather than .value so form.reset()
+    // (used by every add/cancel-edit path) restores the preselection too.
+    const solo = pets.length === 1 ? ' selected' : '';
+    const opts = pets.map(p => `<option value="${p.__id}"${solo}>${esc(p.name)} (${esc(p.species)})</option>`).join('');
     const optsWithAll = `<option value="">All pets / General</option>` + opts;
     ['vet-pet','vacc-pet','med-pet','weight-pet'].forEach(id => {
       const el = document.getElementById(id);
@@ -2177,7 +2181,7 @@
   // Reads version.json from the GitHub Pages site, compares to the version baked into this HTML,
   // and lets the user know if a newer version is available. Works for users opening either the
   // live URL or the downloaded HTML file.
-  const VERSION_URL = 'https://rapunzlnflt-afk.github.io/pet-care-planner/version.json';
+  const VERSION_URL = 'https://cleartrackapps.com/pet-care-planner/version.json';
   const CURRENT_VERSION = (document.querySelector('meta[name="app-version"]') || {}).content || '0.0';
 
   function compareVersions(a, b) {
@@ -2247,8 +2251,8 @@
     const cmp = compareVersions(info.version, CURRENT_VERSION);
     if (cmp > 0) {
       // Newer version available
-      const downloadUrl = info.download_url || 'https://rapunzlnflt-afk.github.io/pet-care-planner/pawfolio-download.html';
-      const liveUrl = info.live_url || 'https://rapunzlnflt-afk.github.io/pet-care-planner/';
+      const downloadUrl = info.download_url || 'https://cleartrackapps.com/pet-care-planner/pawfolio-download.html';
+      const liveUrl = info.live_url || 'https://cleartrackapps.com/pet-care-planner/';
       showUpdateModal({
         heading: 'A new version is available',
         body:
