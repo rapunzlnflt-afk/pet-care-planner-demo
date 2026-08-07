@@ -6,7 +6,7 @@
   <title>Pawfolio — Try the Demo</title>
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.7.0">
+                          <meta name="app-version" content="3.8.2">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -43,6 +43,20 @@
        reads as a layout mistake, especially in the narrow Notes cards. */
     input[type="date"], input[type="time"] { max-width: 200px; }
     @media (max-width: 480px){ input[type="date"], input[type="time"] { max-width: 100%; } }
+    /* ===== Pet insurance block (v3.14.0) ===== */
+    .pet-ins-fieldset { border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; background: rgba(91,91,214,0.04); }
+    .pet-ins-panel { margin-top: 12px; border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 12px; background: rgba(91,91,214,0.05); }
+    .pet-ins-btn { display: inline-block; font-family: 'Karla', sans-serif; font-size: 12px; font-weight: 700; text-decoration: none; padding: 6px 12px; border-radius: 8px; background: var(--accent-color); color: #fff; white-space: nowrap; }
+    .pet-ins-btn:hover { filter: brightness(1.08); }
+    .pet-ins-btn.secondary { background: transparent; color: var(--accent-color); border: 1.5px solid var(--accent-color); }
+    .pet-ins-label { font-family: 'Karla', sans-serif; font-size: 10px; letter-spacing: .04em; color: var(--text-secondary); text-transform: uppercase; margin: 0; }
+    .pet-ins-renew { font-family: 'Karla', sans-serif; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+    /* ===== Add-a-Pet edit mode (v3.14.1) ===== */
+    #add-pet-edit-banner { display: none; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; padding: 9px 12px; border: 1px solid #f6a623; border-radius: 8px; background: rgba(246,166,35,0.12); }
+    #add-pet-edit-banner p { font-family: 'Karla', sans-serif; font-size: 13px; color: var(--text-primary); margin: 0; }
+    #add-pet-cancel-edit { font-family: 'Karla', sans-serif; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 8px; border: 1.5px solid #f6a623; background: transparent; color: #b06f00; cursor: pointer; white-space: nowrap; }
+    #add-pet-cancel-edit:hover { background: rgba(246,166,35,0.2); }
+    #add-pet-card.is-editing { border-top-color: #f6a623 !important; }
     input:focus, select:focus, textarea:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(91,91,214,0.12); }
     .sidebar-item { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 500; color: #64748b; padding: 11px 16px; transition: all 0.15s; }
     .sidebar-item:hover { background: rgba(91,91,214,0.08); color: var(--accent-color); }
@@ -375,21 +389,74 @@
          <input type="text" id="pet-microchip" placeholder="15-digit number">
         </div>
         <div>
-         <label class="block font-body text-sm text-secondary mb-1">Insurance Provider</label>
-         <input type="text" id="pet-insurance" placeholder="e.g., Trupanion">
-        </div>
-       </div>
-       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div>
-         <label class="block font-body text-sm text-secondary mb-1">Insurance Policy #</label>
-         <input type="text" id="pet-policy" placeholder="Policy number">
-        </div>
-        <div>
          <label class="block font-body text-sm text-secondary mb-1">Primary Vet</label>
          <input type="text" id="pet-vet" placeholder="e.g., Dr. Johnson">
         </div>
        </div>
-       <div>
+       <!-- ===== Pet insurance (v3.14.0) ===== -->
+       <div class="pet-ins-fieldset">
+        <p class="font-heading text-sm font-bold text-primary" style="margin-bottom:2px;">Pet Insurance</p>
+        <p class="font-body text-xs text-secondary" style="margin-bottom:10px;">Start typing your provider and the login link and claims number fill in for you. Everything here is optional.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+         <div>
+          <label class="block font-body text-sm text-secondary mb-1">Insurance Provider</label>
+          <input type="text" id="pet-insurance" list="insurer-list" autocomplete="off" placeholder="e.g., Trupanion">
+         </div>
+         <div>
+          <label class="block font-body text-sm text-secondary mb-1">Policy #</label>
+          <input type="text" id="pet-policy" placeholder="Policy number">
+         </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+         <div>
+          <label class="block font-body text-sm text-secondary mb-1">Member / Group ID</label>
+          <input type="text" id="pet-ins-member" placeholder="If your plan uses one">
+         </div>
+         <div>
+          <label class="block font-body text-sm text-secondary mb-1">Claims Phone</label>
+          <input type="tel" id="pet-ins-phone" placeholder="e.g., 888-733-2685">
+         </div>
+        </div>
+        <div style="margin-bottom:12px;">
+         <label class="block font-body text-sm text-secondary mb-1">Website for Login</label>
+         <input type="url" id="pet-ins-url" placeholder="https://members.example.com/login">
+         <p class="font-body text-xs text-secondary" style="margin-top:4px;">A "Log in" button appears on the pet's card so you can jump straight to your account.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:12px;">
+         <div>
+          <label class="block font-body text-sm text-secondary mb-1">Annual Deductible</label>
+          <input type="text" id="pet-ins-deductible" placeholder="e.g., $250">
+         </div>
+         <div>
+          <label class="block font-body text-sm text-secondary mb-1">Reimbursement %</label>
+          <input type="text" id="pet-ins-reimburse" placeholder="e.g., 90%">
+         </div>
+         <div>
+          <label class="block font-body text-sm text-secondary mb-1">Annual Limit</label>
+          <input type="text" id="pet-ins-limit" placeholder="e.g., $15,000">
+         </div>
+        </div>
+        <div>
+         <label class="block font-body text-sm text-secondary mb-1">Policy Renewal Date</label>
+         <input type="date" id="pet-ins-renewal">
+         <p class="font-body text-xs text-secondary" style="margin-top:4px;">Shows up in Upcoming Reminders on the Overview tab starting 60 days out.</p>
+        </div>
+       </div>
+       <datalist id="insurer-list">
+      <option value="Trupanion">
+      <option value="Healthy Paws">
+      <option value="Nationwide">
+      <option value="Lemonade">
+      <option value="Embrace Pet Insurance">
+      <option value="Figo Pet Insurance">
+      <option value="Spot Pet Insurance">
+      <option value="Pets Best">
+      <option value="ASPCA Pet Health Insurance">
+      <option value="MetLife Pet Insurance">
+      <option value="Fetch">
+      <option value="Pumpkin Pet Insurance">
+       </datalist>
+              <div>
         <label class="block font-body text-sm text-secondary mb-1">Known Allergies</label>
         <input type="text" id="pet-allergies" placeholder="e.g., chicken, bee stings">
        </div>
@@ -1294,7 +1361,6 @@
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;">
           ${p.microchip ? `<div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Microchip</p><p class="font-body text-sm">${p.microchip}</p></div>` : ''}
-          ${p.insurance ? `<div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Insurance</p><p class="font-body text-sm">${p.insurance}</p></div>` : ''}
           ${p.vet ? `<div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Primary Vet</p><p class="font-body text-sm">${p.vet}</p></div>` : ''}
           ${p.allergies ? `<div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Allergies</p><p class="font-body text-sm" style="color:#e53e3e;">${p.allergies}</p></div>` : ''}
           ${p.color ? `<div><p class="font-body" style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Color</p><p class="font-body text-sm">${p.color}</p></div>` : ''}
@@ -2200,6 +2266,11 @@
       const days = Math.ceil((new Date(m.refill) - now) / 86400000);
       if(days <= 30) reminders.push({ type: medIsSupplement(m) ? 'Supplement Reorder' : 'Medication Refill', name: m.name, pet: m.petName, days, date: m.refill });
     });
+    // Pet insurance renewals (v3.8.0)
+    getList('pets').filter(p => p.insRenewal && !p.archived).forEach(p => {
+      const days = Math.ceil((new Date(p.insRenewal) - now) / 86400000);
+      if(days >= -7 && days <= 60) reminders.push({ type: 'Insurance Renewal', name: p.insurance ? p.insurance + ' policy' : 'Policy renewal', pet: p.name, days, date: p.insRenewal });
+    });
     getList('vet-visits').map(v => ({...v, next: v.next || v.date})).filter(v => v.next).forEach(v => {
       const days = Math.ceil((new Date(v.next) - now) / 86400000);
       if(days >= 0 && days <= 60) reminders.push({ type: 'Vet Appointment', name: v.reason || 'Follow-up', pet: v.petName, days, date: v.next });
@@ -2211,8 +2282,8 @@
       remindersEl.innerHTML = reminders.map(r => {
         const color = r.days < 0 ? '#e53e3e' : r.days < 7 ? '#f6a623' : '#48bb78';
         const label = r.days < 0 ? 'Overdue' : r.days === 0 ? 'Today' : `${r.days} days`;
-        const tabMap = { 'Vaccination':'vaccinations', 'Medication Refill':'medications', 'Supplement Reorder':'medications', 'Vet Appointment':'vet-visits' };
-        const tabTitles = { 'vaccinations':'Vaccinations', 'medications':'Medications', 'vet-visits':'Vet Visits' };
+        const tabMap = { 'Vaccination':'vaccinations', 'Medication Refill':'medications', 'Supplement Reorder':'medications', 'Vet Appointment':'vet-visits', 'Insurance Renewal':'pet-profiles' };
+        const tabTitles = { 'vaccinations':'Vaccinations', 'medications':'Medications', 'vet-visits':'Vet Visits', 'pet-profiles':'Pet Profiles' };
         const target = tabMap[r.type];
         return `<div onclick="window.goToTab('${target}')" title="View in ${tabTitles[target]}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--border-color);cursor:pointer;border-radius:6px;transition:background 0.15s;" onmouseover="this.style.background='rgba(91,91,214,0.08)'" onmouseout="this.style.background='transparent'">
           <div>
@@ -4453,6 +4524,10 @@ try {
         var medType = (m.type === 'supplement') ? 'Supplement Reorder' : 'Medication Refill';
         if(days <= 30) reminders.push({type:medType, name:m.name, pet:m.petName, days:days, date:m.refill, time:'', tab:'medications'});
       });
+      (getList('pets')||[]).filter(function(p){return p.insRenewal && !p.archived;}).forEach(function(p){
+        var days = Math.ceil((new Date(p.insRenewal) - now) / 86400000);
+        if(days >= -7 && days <= 60) reminders.push({type:'Insurance Renewal', name: p.insurance ? p.insurance + ' policy' : 'Policy renewal', pet:p.name, days:days, date:p.insRenewal, time:'', tab:'pet-profiles'});
+      });
       (getList('vet-visits')||[]).forEach(function(v){
         // Choose appointment date+time (v.date/v.time) OR follow-up date+time (v.next/v.nextTime)
         // If v.next is set, that's a follow-up reminder; otherwise use v.date for scheduled appts.
@@ -4476,7 +4551,7 @@ try {
       var color = r.days < 0 ? '#e53e3e' : r.days < 7 ? '#f6a623' : '#48bb78';
       var label = r.days < 0 ? 'Overdue' : r.days === 0 ? 'Today' : (r.days + ' days');
       var timeBit = r.time ? (' · ' + fmtTime(r.time)) : '';
-      var tabTitles = {'vaccinations':'Vaccinations','medications':'Medications','vet-visits':'Vet Visits'};
+      var tabTitles = {'vaccinations':'Vaccinations','medications':'Medications','vet-visits':'Vet Visits','pet-profiles':'Pet Profiles'};
       var titleAttr = 'View in ' + (tabTitles[r.tab] || '');
       var clickAttr = r.visitId
         ? 'window.pfGoToVetVisit('+r.visitId+')'
@@ -4844,5 +4919,416 @@ try {
   }
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', boot); }
   else { boot(); }
+})();
+</script>
+
+<script>
+/* ============================================================================
+   Pawfolio demo v3.8.0 — Pet insurance (mirrored from the full app v3.14.0)
+   Stores insurance details on the pet record and surfaces a quick-login button
+   on the pet card. Runs after the main app so it can wrap renderPets.
+   ========================================================================== */
+(function(){
+  'use strict';
+
+  var INSURERS = [{"name": "Trupanion", "login_url": "https://members.trupanion.com/login/signin", "phone": "888-733-2685"}, {"name": "Healthy Paws", "login_url": "https://myaccount.healthypawspetinsurance.com/", "phone": "1-855-898-8991"}, {"name": "Nationwide", "login_url": "https://my.petinsurance.com/login", "phone": "800-540-2016"}, {"name": "Lemonade", "login_url": "https://www.lemonade.com/login", "phone": "844-733-8666"}, {"name": "Embrace Pet Insurance", "login_url": "https://my.embracepetinsurance.com/", "phone": "1-800-511-9172"}, {"name": "Figo Pet Insurance", "login_url": "https://mypetcloud.com/login", "phone": "844-738-3446"}, {"name": "Spot Pet Insurance", "login_url": "https://spotpet.com/member-center", "phone": "1-800-905-1595"}, {"name": "Pets Best", "login_url": "https://www.petsbest.com/customerportal", "phone": "1-877-738-7237"}, {"name": "ASPCA Pet Health Insurance", "login_url": "https://www.aspcapetinsurance.com/mc-portal/", "phone": "1-866-204-6764"}, {"name": "MetLife Pet Insurance", "login_url": "https://mypets.metlife.com/account/login", "phone": "855-270-7387"}, {"name": "Fetch", "login_url": "https://my.fetchpet.com/login", "phone": "1-866-467-3875"}, {"name": "Pumpkin Pet Insurance", "login_url": "https://member.pumpkin.care/login", "phone": "1-866-273-6369"}];
+
+  var FIELDS = {
+    insurance:        'pet-insurance',
+    policy:           'pet-policy',
+    insMember:        'pet-ins-member',
+    insPhone:         'pet-ins-phone',
+    insUrl:           'pet-ins-url',
+    insDeductible:    'pet-ins-deductible',
+    insReimburse:     'pet-ins-reimburse',
+    insLimit:         'pet-ins-limit',
+    insRenewal:       'pet-ins-renewal'
+  };
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){
+    var f = window.escHtml || window.esc;
+    if (typeof f === 'function') return f(s == null ? '' : s);
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+  /* Only ever emit http/https links - guards against a pasted javascript: URL. */
+  function safeUrl(u){
+    u = String(u || '').trim();
+    if (!u) return '';
+    if (!/^https?:\/\//i.test(u)) {
+      if (/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(u)) u = 'https://' + u;
+      else return '';
+    }
+    return u;
+  }
+  function telHref(p){
+    var digits = String(p || '').replace(/[^\d+]/g, '');
+    return digits.length >= 7 ? 'tel:' + digits : '';
+  }
+  function fmt(d){
+    if (typeof window.fmtDate === 'function') return window.fmtDate(d);
+    var p = String(d || '').split('-');
+    return p.length === 3 ? p[1] + '/' + p[2] + '/' + p[0] : String(d || '');
+  }
+  function daysUntil(d){
+    if (!d) return null;
+    var parts = String(d).split('-');
+    if (parts.length !== 3) return null;
+    var then = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    var now = new Date(); now.setHours(0,0,0,0);
+    return Math.round((then - now) / 86400000);
+  }
+
+  /* ---------------- provider autofill ---------------- */
+  function matchInsurer(name){
+    var n = String(name || '').trim().toLowerCase();
+    if (!n) return null;
+    for (var i = 0; i < INSURERS.length; i++){
+      if (INSURERS[i].name.toLowerCase() === n) return INSURERS[i];
+    }
+    return null;
+  }
+  function autofillProvider(){
+    var hit = matchInsurer($('pet-insurance') && $('pet-insurance').value);
+    if (!hit) return;
+    var url = $('pet-ins-url'), phone = $('pet-ins-phone');
+    /* Never clobber something the user typed themselves. */
+    if (url && !url.value.trim()) url.value = hit.login_url;
+    if (phone && !phone.value.trim()) phone.value = hit.phone || '';
+  }
+
+  /* ---------------- read + write the form ---------------- */
+  function readForm(){
+    var out = {};
+    Object.keys(FIELDS).forEach(function(key){
+      var el = $(FIELDS[key]);
+      out[key] = el ? el.value.trim() : '';
+    });
+    return out;
+  }
+  function writeForm(pet){
+    pet = pet || {};
+    Object.keys(FIELDS).forEach(function(key){
+      var el = $(FIELDS[key]);
+      if (el) el.value = pet[key] || '';
+    });
+  }
+
+  /* The main app's add handler and the v3.5 edit handler each build their own
+     object literal, so rather than patching both we stamp the extra keys onto
+     the stored record right after any pet save. */
+  /* ---------------- pet card panel ---------------- */
+  function panelHTML(p){
+    var url = safeUrl(p.insUrl);
+    var provider = String(p.insurance || '').trim();
+    if (!provider && !url && !p.policy && !p.insRenewal && !p.insMember) return '';
+
+    var buttons = '';
+    if (url){
+      buttons += '<a class="pet-ins-btn" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer"' +
+                 ' title="Open ' + esc(provider || 'the insurer') + ' in a new tab">Log in \u2197</a>';
+    }
+    var tel = telHref(p.insPhone);
+    if (tel){
+      buttons += '<a class="pet-ins-btn secondary" href="' + esc(tel) + '">Call claims</a>';
+    }
+
+    var bits = [];
+    if (p.policy)        bits.push('Policy ' + esc(p.policy));
+    if (p.insMember)     bits.push('Member ' + esc(p.insMember));
+    if (p.insDeductible) bits.push(esc(p.insDeductible) + ' deductible');
+    if (p.insReimburse)  bits.push(esc(p.insReimburse) + ' back');
+    if (p.insLimit)      bits.push(esc(p.insLimit) + ' a year');
+
+    var renew = '';
+    if (p.insRenewal){
+      var d = daysUntil(p.insRenewal);
+      var bg = '#48bb78', label = 'Renews ' + fmt(p.insRenewal);
+      if (d !== null && d < 0)       { bg = '#94a3b8'; label = 'Renewed ' + fmt(p.insRenewal); }
+      else if (d !== null && d <= 30){ bg = '#f6a623'; label = 'Renews ' + fmt(p.insRenewal) + (d === 0 ? ' \u00b7 today' : ' \u00b7 in ' + d + ' day' + (d === 1 ? '' : 's')); }
+      renew = '<span class="pet-ins-renew" style="background:' + bg + ';color:#fff;">' + label + '</span>';
+    }
+
+    return '<div class="pet-ins-panel">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+          '<div style="min-width:0;">' +
+            '<p class="pet-ins-label">Insurance</p>' +
+            '<p class="font-body text-sm font-medium text-primary" style="margin:0;">' +
+              (provider ? esc(provider) : 'Policy on file') +
+            '</p>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' + renew + buttons + '</div>' +
+        '</div>' +
+        (bits.length ? '<p class="font-body text-xs text-secondary" style="margin:6px 0 0;">' + bits.join(' \u00b7 ') + '</p>' : '') +
+      '</div>';
+  }
+
+  function decorateCards(){
+    var wrap = $('pet-profiles-list') || $('pets-list');
+    if (!wrap || typeof getList !== 'function') return;
+    var pets = getList('pets') || [];
+    pets.forEach(function(p){
+      var card = wrap.querySelector('[data-pet-id="' + p.__id + '"]');
+      if (!card){
+        var x = wrap.querySelector('button.delete-x[onclick*="deletePet(' + p.__id + ')"]');
+        card = x ? x.closest('.card') : null;
+      }
+      if (!card || card.querySelector('.pet-ins-panel')) return;
+      var html = panelHTML(p);
+      if (!html) return;
+      var holder = document.createElement('div');
+      holder.innerHTML = html;
+      card.appendChild(holder.firstChild);
+    });
+  }
+
+  /* ---------------- wiring ---------------- */
+  function boot(){
+    var prov = $('pet-insurance');
+    if (prov){
+      prov.addEventListener('change', autofillProvider);
+      prov.addEventListener('blur', autofillProvider);
+      prov.addEventListener('input', function(){
+        /* Picking from the datalist fires input with the full value. */
+        if (matchInsurer(prov.value)) autofillProvider();
+      });
+    }
+
+    /* Listen on the document, not the form: the v3.5 edit handler is a capture
+       listener on the form itself that calls stopImmediatePropagation(), which
+       would silence a sibling listener there. Document-level capture runs
+       before any of the form's own listeners, so it always gets a look in. */
+    if (!document.__pfInsSubmit){
+      document.__pfInsSubmit = true;
+      document.addEventListener('submit', function(ev){
+        if (!ev.target || ev.target.id !== 'pet-form') return;
+        var hidden = $('pet-edit-id');
+        var before = { editId: hidden && hidden.value ? hidden.value : '' };
+        var data = readForm();
+        setTimeout(function(){
+          try {
+            var pets = getList('pets') || [];
+            var target = null;
+            if (before.editId){
+              for (var i = 0; i < pets.length; i++){
+                if (String(pets[i].__id) === String(before.editId)) { target = pets[i]; break; }
+              }
+            } else {
+              target = pets[pets.length - 1];
+            }
+            if (target){
+              Object.keys(data).forEach(function(k){ target[k] = data[k]; });
+              saveList('pets', pets);
+              if (typeof refreshAll === 'function') refreshAll();
+              else decorateCards();
+            }
+          } catch(e){ console.warn('insurance save failed', e); }
+        }, 0);
+      }, true);
+    }
+
+    /* editPet fills the original fields; extend it to the new ones. */
+    if (typeof window.editPet === 'function' && !window.editPet.__insWrapped){
+      var origEdit = window.editPet;
+      window.editPet = function(id){
+        origEdit.apply(this, arguments);
+        try {
+          var pet = (getList('pets') || []).filter(function(p){ return p.__id == id; })[0];
+          if (pet) writeForm(pet);
+        } catch(e){}
+      };
+      window.editPet.__insWrapped = true;
+    }
+
+    if (typeof window.renderPets === 'function' && !window.renderPets.__insWrapped){
+      var origRender = window.renderPets;
+      window.renderPets = function(){
+        var r = origRender.apply(this, arguments);
+        try { decorateCards(); } catch(e){ console.warn('insurance panel failed', e); }
+        return r;
+      };
+      window.renderPets.__insWrapped = true;
+    }
+
+    decorateCards();
+  }
+
+  window.pfInsurancePanel = panelHTML;
+  window.pfDecorateInsurance = decorateCards;
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 0); });
+  else setTimeout(boot, 0);
+})();
+</script>
+
+<script>
+/* ============================================================================
+   Pawfolio demo v3.8.1 — Add-a-Pet edit mode (mirrored from the full app v3.14.1)
+   The pencil on a pet card reuses the "Add a Pet" panel as an edit form. This
+   makes that state visible (banner + retitled header + amber card edge) and
+   escapable (Cancel button), and clears it whenever you collapse the panel,
+   leave the tab, or finish a save - so the panel is never quietly still
+   editing someone.
+   ========================================================================== */
+(function(){
+  'use strict';
+
+  var EDITING_NAME = '';
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){
+    var f = window.escHtml || window.esc;
+    if (typeof f === 'function') return f(s == null ? '' : s);
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+  function heading(){
+    var t = $('add-pet-toggle');
+    return t ? t.querySelector('h3') : null;
+  }
+  function isEditing(){
+    var hidden = $('pet-edit-id');
+    return !!(hidden && hidden.value);
+  }
+
+  function ensureBanner(){
+    var banner = $('add-pet-edit-banner');
+    if (banner) return banner;
+    var wrap = $('add-pet-form-wrap');
+    var form = $('pet-form');
+    if (!wrap || !form) return null;
+    banner = document.createElement('div');
+    banner.id = 'add-pet-edit-banner';
+    banner.innerHTML = '<p id="add-pet-edit-text">Editing an existing pet</p>' +
+      '<button type="button" id="add-pet-cancel-edit">Cancel editing</button>';
+    wrap.insertBefore(banner, form);
+    banner.querySelector('#add-pet-cancel-edit').addEventListener('click', function(){
+      exitEdit(true);
+    });
+    return banner;
+  }
+
+  function showEditing(name){
+    EDITING_NAME = name || '';
+    var banner = ensureBanner();
+    if (banner){
+      var txt = $('add-pet-edit-text');
+      if (txt) txt.innerHTML = EDITING_NAME
+        ? 'You are editing <strong>' + esc(EDITING_NAME) + '</strong> \u2014 saving updates that profile instead of adding a new pet.'
+        : 'You are editing an existing pet \u2014 saving updates that profile instead of adding a new pet.';
+      banner.style.display = 'flex';
+    }
+    var h = heading();
+    if (h) h.textContent = EDITING_NAME ? 'Edit ' + EDITING_NAME : 'Edit Pet';
+    var card = $('add-pet-card');
+    if (card) card.classList.add('is-editing');
+  }
+
+  /* Drop edit state and put the panel back to a clean "Add a Pet" form.
+     collapse=true also folds the card away, which is what Cancel should do. */
+  function exitEdit(collapse){
+    var hidden = $('pet-edit-id');
+    var wasEditing = isEditing();
+    if (hidden) hidden.value = '';
+    EDITING_NAME = '';
+
+    var form = $('pet-form');
+    if (form && wasEditing){
+      try { form.reset(); } catch(e){}
+    }
+    var preview = $('pet-photo-preview');
+    if (preview && wasEditing){
+      delete preview.dataset.photo;
+      preview.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+    }
+    var submit = document.querySelector('#pet-form button[type=submit]');
+    if (submit) submit.textContent = 'Save Pet Profile';
+
+    var banner = $('add-pet-edit-banner');
+    if (banner) banner.style.display = 'none';
+    var h = heading();
+    if (h) h.textContent = 'Add a Pet';
+    var card = $('add-pet-card');
+    if (card) card.classList.remove('is-editing');
+
+    if (collapse && typeof window.setAddPetExpanded === 'function'){
+      window.setAddPetExpanded(false);
+    } else if (collapse) {
+      var wrap = $('add-pet-form-wrap');
+      if (wrap) wrap.style.display = 'none';
+      var chev = $('add-pet-chevron');
+      if (chev) chev.style.transform = 'rotate(0deg)';
+    }
+  }
+
+  function boot(){
+    /* setAddPetExpanded lives in the main script's closure; expose it so this
+       module (and any future one) can fold the card. */
+    if (typeof setAddPetExpanded === 'function' && !window.setAddPetExpanded){
+      window.setAddPetExpanded = setAddPetExpanded;
+    }
+
+    if (typeof window.editPet === 'function' && !window.editPet.__editModeWrapped){
+      var origEdit = window.editPet;
+      window.editPet = function(id){
+        var r = origEdit.apply(this, arguments);
+        try {
+          var pet = (getList('pets') || []).filter(function(p){ return p.__id == id; })[0];
+          showEditing(pet ? pet.name : '');
+        } catch(e){}
+        return r;
+      };
+      window.editPet.__editModeWrapped = true;
+    }
+
+    /* Collapsing the panel by hand means "I'm done" - drop the edit. */
+    var toggle = $('add-pet-toggle');
+    if (toggle && !toggle.dataset.editModeBound){
+      toggle.dataset.editModeBound = '1';
+      toggle.addEventListener('click', function(){
+        var wrap = $('add-pet-form-wrap');
+        /* This fires after the main handler, so display already reflects the
+           new state: hidden means it was just collapsed. */
+        if (wrap && wrap.style.display === 'none' && isEditing()) exitEdit(false);
+      });
+    }
+
+    /* Leaving the tab drops the edit too, so coming back is always a fresh form. */
+    if (typeof window.goToTab === 'function' && !window.goToTab.__editModeWrapped){
+      var origGo = window.goToTab;
+      window.goToTab = function(name){
+        try { if (name !== 'pet-profiles' && isEditing()) exitEdit(false); } catch(e){}
+        return origGo.apply(this, arguments);
+      };
+      window.goToTab.__editModeWrapped = true;
+    }
+    var navButtons = document.querySelectorAll('.sidebar-item[data-tab]');
+    Array.prototype.forEach.call(navButtons, function(btn){
+      if (btn.dataset.editModeBound) return;
+      btn.dataset.editModeBound = '1';
+      btn.addEventListener('click', function(){
+        if (btn.getAttribute('data-tab') !== 'pet-profiles' && isEditing()) exitEdit(false);
+      });
+    });
+
+    /* After any save the app clears the hidden id itself; clear the chrome. */
+    if (!document.__pfEditModeSubmit){
+      document.__pfEditModeSubmit = true;
+      document.addEventListener('submit', function(ev){
+        if (!ev.target || ev.target.id !== 'pet-form') return;
+        setTimeout(function(){ exitEdit(false); }, 60);
+      }, true);
+    }
+
+    if (isEditing()) showEditing('');
+  }
+
+  window.pfExitPetEdit = exitEdit;
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 0); });
+  else setTimeout(boot, 0);
 })();
 </script>
