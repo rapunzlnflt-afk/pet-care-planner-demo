@@ -6,7 +6,7 @@
   <title>Pawfolio — Try the Demo</title>
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.10.0">
+                          <meta name="app-version" content="3.10.1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -5784,9 +5784,97 @@ try {
      FIX 3 — receipts link back to the visit, and saving one returns you there
      ======================================================================== */
 
-  function docsForVisit(id){
-    return list('documents').filter(function(d){ return String(d.__vetVisitId || '') === String(id); });
+  /* The visit<->document link cannot live only on the document record.
+     The v3.7.0 camera hook reads the documents list at submit time, then writes that
+     same snapshot back once the compressed photo has finished saving to IndexedDB.
+     That write is asynchronous and its snapshot predates our tag, so for a photo
+     receipt it silently clobbers __vetVisitId — the link was only surviving for
+     link-only receipts, where the hook bails out early.
+
+     So the durable record is a small side map in its own storage key, and
+     __vetVisitId becomes a convenience mirror that we re-heal whenever it gets
+     wiped. The map is the source of truth. */
+  var LINKS_KEY = 'pawfolioVisitDocLinks';
+
+  function readLinks(){
+    try {
+      var raw = localStorage.getItem(LINKS_KEY);
+      var obj = raw ? JSON.parse(raw) : {};
+      return (obj && typeof obj === 'object' && !Array.isArray(obj)) ? obj : {};
+    } catch(e){ return {}; }
   }
+  function writeLinks(map){
+    try { localStorage.setItem(LINKS_KEY, JSON.stringify(map)); } catch(e){}
+  }
+  function linkDocToVisit(docId, visitId){
+    var map = readLinks();
+    map[String(docId)] = String(visitId);
+    writeLinks(map);
+  }
+  function unlinkDoc(docId){
+    var map = readLinks();
+    if (map.hasOwnProperty(String(docId))){ delete map[String(docId)]; writeLinks(map); }
+  }
+
+  // Drop links whose document is gone, and restore __vetVisitId where the map still
+  // knows the pairing but the field was overwritten. Returns true if docs were saved.
+  function reconcileLinks(){
+    var map = readLinks();
+    var ids = Object.keys(map);
+    if (!ids.length) return false;
+    var docs = list('documents');
+    var byId = {};
+    docs.forEach(function(d){ byId[String(d.__id)] = d; });
+
+    var mapChanged = false, docsChanged = false;
+    ids.forEach(function(docId){
+      var d = byId[docId];
+      if (!d){ delete map[docId]; mapChanged = true; return; }
+      if (String(d.__vetVisitId || '') !== String(map[docId])){
+        d.__vetVisitId = String(map[docId]);
+        docsChanged = true;
+      }
+    });
+    // Anything tagged on the record but missing from the map (e.g. saved by an older
+    // build) is adopted into the map so it survives from here on.
+    docs.forEach(function(d){
+      if (d.__vetVisitId && !map.hasOwnProperty(String(d.__id))){
+        map[String(d.__id)] = String(d.__vetVisitId);
+        mapChanged = true;
+      }
+    });
+
+    if (mapChanged) writeLinks(map);
+    if (docsChanged && typeof window.saveList === 'function') window.saveList('documents', docs);
+    return docsChanged;
+  }
+
+  function docsForVisit(id){
+    var map = readLinks();
+    return list('documents').filter(function(d){
+      return String(d.__vetVisitId || '') === String(id) ||
+             String(map[String(d.__id)] || '') === String(id);
+    });
+  }
+
+  // Exposed so the user can attach an older receipt that predates this release.
+  window.pfLinkExistingDoc = function(docId, visitId){
+    linkDocToVisit(docId, visitId);
+    reconcileLinks();
+    if (typeof window.refreshAll === 'function') window.refreshAll();
+    return true;
+  };
+  window.pfUnlinkDoc = function(docId){
+    unlinkDoc(docId);
+    var docs = list('documents');
+    var d = docs.filter(function(x){ return String(x.__id) === String(docId); })[0];
+    if (d && d.__vetVisitId){
+      delete d.__vetVisitId;
+      if (typeof window.saveList === 'function') window.saveList('documents', docs);
+    }
+    if (typeof window.refreshAll === 'function') window.refreshAll();
+    return true;
+  };
 
   // Called from cardHTML. Returns the receipt chip row for a visit, or '' if none.
   window.pfVisitReceiptChips = function(visitId){
@@ -5802,7 +5890,7 @@ try {
       return 'https://' + u;                            // bare domain like example.com/d.pdf
     };
     var chipStyle = 'display:inline-flex;align-items:center;gap:5px;max-width:100%;background:rgba(72,187,120,0.10);' +
-                    'color:#2f855a;font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;' +
+                    'color:#276749;font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;' +
                     'border:1px solid rgba(72,187,120,0.35);cursor:pointer;font-family:inherit;' +
                     'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
     var chips = docs.map(function(d){
@@ -5887,6 +5975,9 @@ try {
   }
 
   function tagDoc(docId, visitId){
+    // Write the durable side map first — it is what actually makes the link stick if
+    // a later delayed save overwrites the documents list afterwards.
+    linkDocToVisit(docId, visitId);
     var docs = list('documents');
     var d = docs.filter(function(x){ return String(x.__id) === String(docId); })[0];
     if (!d || String(d.__vetVisitId || '') === String(visitId)) return;
@@ -5951,6 +6042,8 @@ try {
       normalizeStatuses();
       var r = orig.apply(this, arguments);
       try { relaxGrids(); } catch(e){}
+      // Re-heal any receipt link a delayed save may have wiped.
+      try { reconcileLinks(); } catch(e){}
       return r;
     };
     window.refreshAll.__v3100 = true;
@@ -5961,6 +6054,7 @@ try {
       return setTimeout(boot, 90);
     }
     normalizeStatuses();
+    try { reconcileLinks(); } catch(e){}
     stampStatusFromFormMode();
     wrapRenderOverview();
     wrapRefreshAll();
