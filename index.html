@@ -27,6 +27,43 @@
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
   <link rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
+  <!-- ===== DEMO STORAGE SANDBOX =====
+       The demo and the paid app are served from the same domain
+       (cleartrackapps.com/pet-care-planner-demo/ and /pet-care-planner/), and
+       localStorage is shared across every path on a domain. The demo used to
+       call DS.clear() on load and then write petPlannerData_v1 —
+       which silently DESTROYED the real records of anyone who had used the
+       hosted app on the same phone, and made the app show Bella and Miso.
+
+       Every storage call in this file now goes through DS instead of
+       DS. DS prefixes each key, so the demo can only ever read,
+       write, or clear its own keys. Two rules for future edits:
+         1. Never write `DS.` in this file. Always use `DS.`.
+         2. DS.clear() removes ONLY prefixed keys — never the whole store.
+       Deliberately not overriding window.localStorage itself, because that
+       is a built-in and the behaviour is less predictable on iOS Safari. -->
+  <script type="text/javascript">
+    var DS = (function(){
+      var P = 'pawfolioDemo:';
+      function ok(fn, fallback){ try { return fn(); } catch(e) { return fallback; } }
+      return {
+        prefix: P,
+        getItem: function(k){ return ok(function(){ return localStorage.getItem(P + k); }, null); },
+        setItem: function(k, v){ return ok(function(){ return localStorage.setItem(P + k, v); }); },
+        removeItem: function(k){ return ok(function(){ return localStorage.removeItem(P + k); }); },
+        clear: function(){
+          ok(function(){
+            var doomed = [];
+            for (var i = 0; i < localStorage.length; i++) {
+              var k = localStorage.key(i);
+              if (k && k.indexOf(P) === 0) doomed.push(k);
+            }
+            doomed.forEach(function(k){ localStorage.removeItem(k); });
+          });
+        }
+      };
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
   <!-- v3.10.0 startup speed: the Font Awesome CDN stylesheet (~19 KB + a webfont file) was
        render-blocking on every open just to draw three overview icons. Those three are now
@@ -299,7 +336,7 @@
     var FRESH = 'pawfolioDemoFresh';
     var fresh = false;
     try { fresh = sessionStorage.getItem(FRESH) === '1'; } catch(e) {}
-    try { localStorage.clear(); } catch(e) {}
+    try { DS.clear(); } catch(e) {}
     window.__demoFresh = fresh;
     if (fresh) return;
 
@@ -446,13 +483,13 @@
     };
 
     try {
-      localStorage.setItem('petPlannerData_v1', JSON.stringify(store));
-      localStorage.setItem('petSitterInfo', JSON.stringify(sitter));
+      DS.setItem('petPlannerData_v1', JSON.stringify(store));
+      DS.setItem('petSitterInfo', JSON.stringify(sitter));
       /* Suppress the first-run nags — they are aimed at real owners, not visitors. */
       var t = d(0);
-      localStorage.setItem('petPlannerSeenWelcome', t);
-      localStorage.setItem('backupReminderSnoozed', t);
-      localStorage.setItem('petPlannerFirstSeen', t);
+      DS.setItem('petPlannerSeenWelcome', t);
+      DS.setItem('backupReminderSnoozed', t);
+      DS.setItem('petPlannerFirstSeen', t);
     } catch(e) {}
   })();
   </script>
@@ -1481,10 +1518,10 @@
   const STORE_KEY = 'petPlannerData_v1';
 
   function loadData() {
-    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch(e) { return {}; }
+    try { return JSON.parse(DS.getItem(STORE_KEY) || '{}'); } catch(e) { return {}; }
   }
   function saveData(data) {
-    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    DS.setItem(STORE_KEY, JSON.stringify(data));
   }
   function getList(type) {
     return loadData()[type] || [];
@@ -2208,7 +2245,7 @@
     const pets = getList('pets');
     const section = document.getElementById('sitter-pets-section');
     if(!pets.length) { section.innerHTML = '<p class="font-body text-sm text-secondary italic mb-4">Add pets in Pet Profiles first to see per-pet sitter sections.</p>'; return; }
-    const sitterData = JSON.parse(localStorage.getItem('petSitterInfo') || '{}');
+    const sitterData = JSON.parse(DS.getItem('petSitterInfo') || '{}');
     section.innerHTML = pets.map(p => `
       <div class="card p-5 mb-4" style="border-top:4px solid var(--accent-color-2);">
         <h3 class="font-heading text-sm font-bold text-primary mb-3">${esc(p.name)} (${esc(p.species)})</h3>
@@ -2255,7 +2292,7 @@
   }
 
   function showSitterPreview() {
-    const data = JSON.parse(localStorage.getItem('petSitterInfo') || '{}');
+    const data = JSON.parse(DS.getItem('petSitterInfo') || '{}');
     const pets = getList('pets');
     const tab = document.getElementById('tab-pet-sitter');
 
@@ -2362,7 +2399,7 @@
 
   document.getElementById('save-sitter-btn').addEventListener('click', () => {
     const data = collectSitterData();
-    localStorage.setItem('petSitterInfo', JSON.stringify(data));
+    DS.setItem('petSitterInfo', JSON.stringify(data));
     showSitterPreview();
   });
 
@@ -2375,7 +2412,7 @@
     clearTimeout(_sitterSaveTimer);
     _sitterSaveTimer = setTimeout(() => {
       const data = collectSitterData();
-      localStorage.setItem('petSitterInfo', JSON.stringify(data));
+      DS.setItem('petSitterInfo', JSON.stringify(data));
       if(status) {
         status.textContent = '\u2713 Saved';
         status.style.color = 'var(--accent-color)';
@@ -2395,7 +2432,7 @@
 
   // Restore sitter owner fields on load
   function restoreSitterOwnerFields() {
-    const data = JSON.parse(localStorage.getItem('petSitterInfo') || '{}');
+    const data = JSON.parse(DS.getItem('petSitterInfo') || '{}');
     ['sitter-owner-name','sitter-owner-phone','sitter-owner-email','sitter-away-dates',
      'sitter-emerg-name','sitter-emerg-phone','sitter-vet','sitter-emerg-vet','sitter-instructions'].forEach(id => {
       const el = document.getElementById(id);
@@ -2406,7 +2443,7 @@
   // Print pet sitter info
   document.getElementById('print-sitter-btn').addEventListener('click', () => {
     const pets = getList('pets');
-    const data = JSON.parse(localStorage.getItem('petSitterInfo') || '{}');
+    const data = JSON.parse(DS.getItem('petSitterInfo') || '{}');
     const win = window.open('', '_blank');
     win.document.write(`<!DOCTYPE html><html><head><title>Pet Sitter Instructions — Pawfolio</title>
     <style>
@@ -2591,7 +2628,7 @@
   function exportPlannerData() {
     const keys = [STORE_KEY, 'petSitterInfo', 'petPlannerTheme'];
     const data = {};
-    keys.forEach(k => { const v = localStorage.getItem(k); if(v) data[k] = v; });
+    keys.forEach(k => { const v = DS.getItem(k); if(v) data[k] = v; });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2600,8 +2637,8 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
     // Record export timestamp and refresh banner
-    localStorage.setItem('petPlannerLastExport', today());
-    localStorage.removeItem('backupReminderSnoozed');
+    DS.setItem('petPlannerLastExport', today());
+    DS.removeItem('backupReminderSnoozed');
     renderBackupReminder();
   }
   document.getElementById('export-data-btn').addEventListener('click', exportPlannerData);
@@ -2695,15 +2732,15 @@
         ]
       });
       // Mark as notified so we don't nag
-      localStorage.setItem('pawfolioLastUpdateCheck', new Date().toISOString().slice(0,10));
-      localStorage.setItem('pawfolioLatestKnownVersion', info.version);
+      DS.setItem('pawfolioLastUpdateCheck', new Date().toISOString().slice(0,10));
+      DS.setItem('pawfolioLatestKnownVersion', info.version);
     } else {
       if (!silent) showUpdateModal({
         heading: "You're up to date",
         body: '<p style="margin:0;">You\'re running the latest version (' + CURRENT_VERSION + '). Thanks for keeping Pawfolio current</p>',
         buttons: [{ label: 'Great', primary: true }]
       });
-      localStorage.setItem('pawfolioLastUpdateCheck', new Date().toISOString().slice(0,10));
+      DS.setItem('pawfolioLastUpdateCheck', new Date().toISOString().slice(0,10));
     }
   }
 
@@ -2712,7 +2749,7 @@
   // Silent daily background check on load (disabled in demo)
   (function silentBackgroundCheck() {
     if (window.DEMO_MODE) return;
-    const last = localStorage.getItem('pawfolioLastUpdateCheck');
+    const last = DS.getItem('pawfolioLastUpdateCheck');
     const todayStr = new Date().toISOString().slice(0,10);
     if (last === todayStr) return; // already checked today
     setTimeout(() => checkForUpdates(true), 3000); // wait 3s so it doesn't slow down initial load
@@ -2721,15 +2758,15 @@
   // ============ BACKUP REMINDER + FIRST-VISIT NOTICE ============
   // First-visit notice: show once if user has any data and hasn't dismissed it
   function renderFirstVisitNotice() {
-    const seen = localStorage.getItem('petPlannerSeenWelcome');
-    const hasData = !!localStorage.getItem(STORE_KEY) || !!localStorage.getItem('petSitterInfo');
+    const seen = DS.getItem('petPlannerSeenWelcome');
+    const hasData = !!DS.getItem(STORE_KEY) || !!DS.getItem('petSitterInfo');
     const el = document.getElementById('first-visit-notice');
     if(!el) return;
     if(!seen && hasData) el.style.display = 'block';
     else el.style.display = 'none';
   }
   document.getElementById('first-visit-dismiss').addEventListener('click', () => {
-    localStorage.setItem('petPlannerSeenWelcome', today());
+    DS.setItem('petPlannerSeenWelcome', today());
     document.getElementById('first-visit-notice').style.display = 'none';
   });
 
@@ -2737,19 +2774,19 @@
   function renderBackupReminder() {
     const el = document.getElementById('backup-reminder');
     if(!el) return;
-    const hasData = !!localStorage.getItem(STORE_KEY) || !!localStorage.getItem('petSitterInfo');
+    const hasData = !!DS.getItem(STORE_KEY) || !!DS.getItem('petSitterInfo');
     if(!hasData) { el.style.display = 'none'; return; }
 
     // Track first save date (when we first detected data)
-    let firstSeen = localStorage.getItem('petPlannerFirstSeen');
-    if(!firstSeen) { firstSeen = today(); localStorage.setItem('petPlannerFirstSeen', firstSeen); }
+    let firstSeen = DS.getItem('petPlannerFirstSeen');
+    if(!firstSeen) { firstSeen = today(); DS.setItem('petPlannerFirstSeen', firstSeen); }
 
-    const lastExport = localStorage.getItem('petPlannerLastExport');
+    const lastExport = DS.getItem('petPlannerLastExport');
     const baseline = lastExport || firstSeen;
     const daysSince = Math.floor((Date.now() - new Date(baseline).getTime()) / 86400000);
 
     // Snooze: hide for current session if user dismissed today
-    const snoozed = localStorage.getItem('backupReminderSnoozed');
+    const snoozed = DS.getItem('backupReminderSnoozed');
     if(snoozed === today()) { el.style.display = 'none'; return; }
 
     // Threshold: show only if 3+ days since baseline
@@ -2779,7 +2816,7 @@
   }
   document.getElementById('backup-reminder-export').addEventListener('click', exportPlannerData);
   document.getElementById('backup-reminder-dismiss').addEventListener('click', () => {
-    localStorage.setItem('backupReminderSnoozed', today());
+    DS.setItem('backupReminderSnoozed', today());
     document.getElementById('backup-reminder').style.display = 'none';
   });
 
@@ -2789,7 +2826,7 @@
     reader.onload = evt => {
       try {
         const data = JSON.parse(evt.target.result);
-        Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
+        Object.keys(data).forEach(k => DS.setItem(k, data[k]));
         alert('Data imported! The page will reload.');
         window.location.reload();
       } catch(err) { alert('Invalid backup file.'); }
@@ -2820,10 +2857,10 @@
     const sun = '<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/><circle cx="12" cy="12" r="5"/>';
     const moon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
     function applyTheme(dark) {
-      if(dark) { document.documentElement.setAttribute('data-theme','dark'); icon.innerHTML = sun; label.textContent = 'Light Mode'; localStorage.setItem('petPlannerTheme','dark'); }
-      else { document.documentElement.removeAttribute('data-theme'); icon.innerHTML = moon; label.textContent = 'Dark Mode'; localStorage.setItem('petPlannerTheme','light'); }
+      if(dark) { document.documentElement.setAttribute('data-theme','dark'); icon.innerHTML = sun; label.textContent = 'Light Mode'; DS.setItem('petPlannerTheme','dark'); }
+      else { document.documentElement.removeAttribute('data-theme'); icon.innerHTML = moon; label.textContent = 'Dark Mode'; DS.setItem('petPlannerTheme','light'); }
     }
-    applyTheme(localStorage.getItem('petPlannerTheme') === 'dark');
+    applyTheme(DS.getItem('petPlannerTheme') === 'dark');
     btn.addEventListener('click', () => applyTheme(document.documentElement.getAttribute('data-theme') !== 'dark'));
   })();
 
@@ -6045,13 +6082,13 @@ try {
 
   function readLinks(){
     try {
-      var raw = localStorage.getItem(LINKS_KEY);
+      var raw = DS.getItem(LINKS_KEY);
       var obj = raw ? JSON.parse(raw) : {};
       return (obj && typeof obj === 'object' && !Array.isArray(obj)) ? obj : {};
     } catch(e){ return {}; }
   }
   function writeLinks(map){
-    try { localStorage.setItem(LINKS_KEY, JSON.stringify(map)); } catch(e){}
+    try { DS.setItem(LINKS_KEY, JSON.stringify(map)); } catch(e){}
   }
   function linkDocToVisit(docId, visitId){
     var map = readLinks();
