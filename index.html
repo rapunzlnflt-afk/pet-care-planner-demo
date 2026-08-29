@@ -2415,7 +2415,7 @@
       ${data['sitter-behavior-'+p.__id] ? `<div class="field" style="margin-top:8px;"><div class="label">Behavioral Notes</div><div class="value">${esc(data['sitter-behavior-'+p.__id])}</div></div>` : ''}
     </div>`).join('')}
     ${data['sitter-instructions'] ? `<h2>Additional Instructions</h2><p>${esc(data['sitter-instructions'])}</p>` : ''}
-    </body></html>`);
+    <\/body><\/html>`);
     win.document.close();
     win.print();
   });
@@ -3847,7 +3847,7 @@ refreshAll();
       'li{margin-bottom:8px;font-size:13px;}footer{margin-top:26px;color:#94a3b8;font-size:11px;}</style></head><body>' +
       '<h1>Pawfolio Timeline</h1><p class="meta">'+esc(who)+' · printed '+esc(fdate(iso()))+'</p>' +
       (rows ? '<ol>'+rows+'</ol>' : '<p>No entries.</p>') +
-      '<footer>Created with Pawfolio</footer></body></html>';
+      '<footer>Created with Pawfolio<\/footer><\/body><\/html>';
     var w = window.open('', '_blank');
     if (!w){ say('Please allow pop-ups to print the timeline.'); return; }
     w.document.write(html); w.document.close();
