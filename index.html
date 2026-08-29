@@ -308,12 +308,16 @@
           dob: '2021-04-12', color: 'Golden', sex: 'Female (Spayed)',
           microchip: '985141002356789', insurance: 'Trupanion', policy: 'TP-4471902',
           vet: VET, allergies: 'Chicken',
-          notes: 'Nervous at the clinic. Bring the peanut butter.', photo: '' },
+          notes: 'Nervous at the clinic. Bring the peanut butter.',
+          // Repo asset rather than an inline data URL: index.html is already
+          // large, and the browser caches a real file separately.
+          photo: 'assets/pet-bella.jpg' },
         { __id: MISO, name: 'Miso', species: 'Cat', breed: 'Domestic Shorthair',
           dob: '2023-08-02', color: 'Gray tabby', sex: 'Male (Neutered)',
           microchip: '985141009874321', insurance: '', policy: '',
           vet: VET, allergies: '',
-          notes: 'Hides in the carrier. Do not chase him.', photo: '' }
+          notes: 'Hides in the carrier. Do not chase him.',
+          photo: 'assets/pet-miso.jpg' }
       ],
       'vet-visits': [
         { __id: 2001, petId: BELLA, petName: 'Bella', date: d(-34), vet: 'Dr. Reyes',
@@ -3791,7 +3795,11 @@ refreshAll();
   window.renderTimeline = renderTimeline;
 
   // ---------- copy / print ----------
-  function summaryLines(){
+  // Each entry comes back as parts rather than one finished sentence: the print
+  // view sets the date and pet in their own left-hand column, while Copy still
+  // needs the flat one-line form. summaryLines() assembles that flat form from
+  // these same parts, so the two can never drift apart.
+  function summaryParts(){
     var entries = timelineEntries().slice().sort(function(a,b){ return String(a.date||'').localeCompare(String(b.date||'')); });
     return entries.map(function(e){
       var r = e.rec, pet = petLabel(r);
@@ -3800,14 +3808,22 @@ refreshAll();
         if (r.vet) bits.push(r.vet);
         if (r.reason) bits.push('Reason: ' + r.reason);
         if (r.diagnosis) bits.push(r.diagnosis);
-        return fdate(r.date) + (pet ? ' · ' + pet : '') + ' — ' + bits.join(' — ');
+        return { date: fdate(r.date), pet: pet || '', body: bits.join(' — ') };
       }
       if (e.kind === 'update'){
         var origin = r.text || '';
         if (origin.length > 50) origin = origin.slice(0, 50) + '\u2026';
-        return fdate(e.upd.date) + (pet ? ' · ' + pet : '') + ' — Update on “' + origin + '”: ' + e.upd.text;
+        return { date: fdate(e.upd.date), pet: pet || '',
+                 body: 'Update on “' + origin + '”: ' + e.upd.text };
       }
-      return fdate(r.date) + (pet ? ' · ' + pet : '') + ' — ' + (r.category || 'Note') + ': ' + r.text + (r.flag ? ' [for the vet]' : '');
+      return { date: fdate(r.date), pet: pet || '',
+               body: (r.category || 'Note') + ': ' + r.text + (r.flag ? ' [for the vet]' : '') };
+    });
+  }
+
+  function summaryLines(){
+    return summaryParts().map(function(p){
+      return p.date + (p.pet ? ' · ' + p.pet : '') + ' — ' + p.body;
     });
   }
 
@@ -3840,11 +3856,33 @@ refreshAll();
   function printSummary(){
     var sel = $('timeline-pet');
     var who = (sel && sel.value && sel.options[sel.selectedIndex]) ? sel.options[sel.selectedIndex].text : 'All pets';
-    var rows = summaryLines().map(function(l){ return '<li>'+esc(l)+'</li>'; }).join('');
+    // The date and pet sit in their own left-hand column, so every entry's text
+    // begins at the same x as the eye travels down the page. A repeated date is
+    // left blank rather than restated, which makes one day read as one block.
+    var lastDate = null, lastHead = null;
+    var rows = summaryParts().map(function(p){
+      var head = p.date + '\u0000' + p.pet;
+      var showDate = (p.date !== lastDate), showPet = (head !== lastHead);
+      lastDate = p.date; lastHead = head;
+      // The grid lives on an inner span, not the li: putting it on the li
+      // itself silently drops every list number.
+      return '<li><span class="row"><span class="when">' +
+          (showDate ? '<span class="d">'+esc(p.date)+'<\/span>' : '') +
+          (showPet && p.pet ? '<span class="p">'+esc(p.pet)+'<\/span>' : '') +
+        '<\/span><span class="what">'+esc(p.body)+'<\/span><\/span><\/li>';
+    }).join('');
     var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pawfolio Timeline</title>' +
       '<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1e293b;padding:28px;line-height:1.55;}' +
       'h1{color:'+ACCENT+';font-size:20px;margin:0 0 2px;}p.meta{color:#64748b;font-size:12px;margin:0 0 18px;}' +
-      'li{margin-bottom:8px;font-size:13px;}footer{margin-top:26px;color:#94a3b8;font-size:11px;}</style></head><body>' +
+      'ol{margin:0;padding-left:22px;}' +
+      'li{margin-bottom:9px;font-size:13px;}' +
+      '.row{display:grid;grid-template-columns:92px minmax(0,1fr);column-gap:11px;align-items:start;}' +
+      '.when{font-size:11.5px;color:#64748b;line-height:1.4;font-variant-numeric:tabular-nums;}' +
+      '.when>span{display:block;}.when .d{font-weight:700;color:#334155;}.when .p{color:'+ACCENT+';}' +
+      '.what{min-width:0;}' +
+      '@media print{li,.row{break-inside:avoid;page-break-inside:avoid;}}' +
+      '@media (max-width:430px){.row{grid-template-columns:76px minmax(0,1fr);column-gap:8px;}}' +
+      'footer{margin-top:26px;color:#94a3b8;font-size:11px;}<\/style><\/head><body>' +
       '<h1>Pawfolio Timeline</h1><p class="meta">'+esc(who)+' · printed '+esc(fdate(iso()))+'</p>' +
       (rows ? '<ol>'+rows+'</ol>' : '<p>No entries.</p>') +
       '<footer>Created with Pawfolio<\/footer><\/body><\/html>';
