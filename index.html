@@ -282,14 +282,177 @@
   <script>
   var DEMO_MODE = true;
   window.DEMO_MODE = true;
-  // Demo mode: clear all data on page load so each visit starts fresh
-  try { localStorage.clear(); } catch(e) {}
+  /* Demo mode.
+     Every visit still starts clean — nothing a visitor types is kept.
+     But instead of opening on an empty app (Pets 0, Visits 0, $0) we plant a
+     sample two-pet household so the very first screen shows what a filled-in
+     Pawfolio looks like. "Start fresh" in the bottom bar sets a session flag
+     and skips the seed, so anyone who wants to enter their own pet can.
+     The paid version is the one that remembers; that is the whole pitch. */
+  (function seedDemo(){
+    var FRESH = 'pawfolioDemoFresh';
+    var fresh = false;
+    try { fresh = sessionStorage.getItem(FRESH) === '1'; } catch(e) {}
+    try { localStorage.clear(); } catch(e) {}
+    window.__demoFresh = fresh;
+    if (fresh) return;
+
+    var DAY = 86400000;
+    function d(off){ return new Date(Date.now() + off * DAY).toISOString().slice(0,10); }
+    var BELLA = 1001, MISO = 1002;
+    var VET = 'Dr. Reyes \u2014 Lakeside Animal Clinic';
+
+    var store = {
+      pets: [
+        { __id: BELLA, name: 'Bella', species: 'Dog', breed: 'Golden Retriever',
+          dob: '2021-04-12', color: 'Golden', sex: 'Female (Spayed)',
+          microchip: '985141002356789', insurance: 'Trupanion', policy: 'TP-4471902',
+          vet: VET, allergies: 'Chicken',
+          notes: 'Nervous at the clinic. Bring the peanut butter.', photo: '' },
+        { __id: MISO, name: 'Miso', species: 'Cat', breed: 'Domestic Shorthair',
+          dob: '2023-08-02', color: 'Gray tabby', sex: 'Male (Neutered)',
+          microchip: '985141009874321', insurance: '', policy: '',
+          vet: VET, allergies: '',
+          notes: 'Hides in the carrier. Do not chase him.', photo: '' }
+      ],
+      'vet-visits': [
+        { __id: 2001, petId: BELLA, petName: 'Bella', date: d(-34), vet: 'Dr. Reyes',
+          type: 'Wellness Exam', reason: 'Annual check-up',
+          diagnosis: 'Healthy \u2014 mild tartar starting', weight: '67.4',
+          cost: 118.5, next: d(331) },
+        { __id: 2002, petId: BELLA, petName: 'Bella', date: d(-96), vet: 'Dr. Reyes',
+          type: 'Sick Visit', reason: 'Itching and scratching at both ears',
+          diagnosis: 'Seasonal allergies', weight: '66.1', cost: 94, next: '' },
+        { __id: 2003, petId: MISO, petName: 'Miso', date: d(-12), vet: 'Dr. Reyes',
+          type: 'Dental', reason: 'Tartar and bad breath',
+          diagnosis: 'Grade 2 tartar \u2014 cleaned, no extractions', weight: '10.8',
+          cost: 243.75, next: d(353) }
+      ],
+      vaccinations: [
+        { __id: 4001, petId: BELLA, petName: 'Bella', name: 'Rabies',
+          date: d(-399), next: d(696), vet: 'Dr. Reyes', lot: 'RB-22841' },
+        { __id: 4002, petId: BELLA, petName: 'Bella', name: 'Bordetella (Kennel Cough)',
+          date: d(-353), next: d(12), vet: 'Dr. Reyes', lot: 'BD-7719' },
+        { __id: 4003, petId: BELLA, petName: 'Bella', name: 'DHPP (Distemper/Parvo)',
+          date: d(-319), next: d(46), vet: 'Dr. Reyes', lot: 'DH-4460' },
+        { __id: 4004, petId: MISO, petName: 'Miso', name: 'FVRCP (Distemper)',
+          date: d(-304), next: d(61), vet: 'Dr. Reyes', lot: 'FV-1130' },
+        { __id: 4005, petId: MISO, petName: 'Miso', name: 'Rabies',
+          date: d(-304), next: d(61), vet: 'Dr. Reyes', lot: 'RB-23004' }
+      ],
+      medications: [
+        { __id: 5001, petId: BELLA, petName: 'Bella', type: 'medication', name: 'Apoquel',
+          dosage: '16 mg', frequency: 'Twice daily', start: d(-96), refill: d(9),
+          vet: 'Dr. Reyes', brand: '', notes: 'For the seasonal itching' },
+        { __id: 5002, petId: BELLA, petName: 'Bella', type: 'medication', name: 'Heartgard Plus',
+          dosage: '1 chew', frequency: 'Monthly', start: d(-278), refill: d(3),
+          vet: 'Dr. Reyes', brand: '', notes: 'Heartworm prevention' },
+        { __id: 5003, petId: BELLA, petName: 'Bella', type: 'supplement', name: 'Fish oil',
+          dosage: '1 pump', frequency: 'Once daily', start: d(-150), refill: '',
+          vet: '', brand: 'Nordic Naturals', notes: 'Coat and joints' },
+        { __id: 5004, petId: MISO, petName: 'Miso', type: 'medication', name: 'Revolution Plus',
+          dosage: '1 tube', frequency: 'Monthly', start: d(-120), refill: d(6),
+          vet: 'Dr. Reyes', brand: '', notes: 'Flea and tick' }
+      ],
+      weights: [
+        { __id: 3001, petId: BELLA, petName: 'Bella', lbs: 64.2, date: d(-278), notes: '' },
+        { __id: 3002, petId: BELLA, petName: 'Bella', lbs: 65.5, date: d(-186), notes: '' },
+        { __id: 3003, petId: BELLA, petName: 'Bella', lbs: 66.1, date: d(-96), notes: 'From vet visit' },
+        { __id: 3004, petId: BELLA, petName: 'Bella', lbs: 67.4, date: d(-34), notes: 'From vet visit' },
+        { __id: 3005, petId: MISO, petName: 'Miso', lbs: 10.2, date: d(-190), notes: '' },
+        { __id: 3006, petId: MISO, petName: 'Miso', lbs: 10.8, date: d(-12), notes: 'From vet visit' }
+      ],
+      expenses: [
+        { __id: 6001, petId: BELLA, petName: 'Bella', category: 'Vet Visit', amount: 118.5,
+          date: d(-34), desc: 'Annual check-up', __vetVisitId: 2001 },
+        { __id: 6002, petId: BELLA, petName: 'Bella', category: 'Vet Visit', amount: 94,
+          date: d(-96), desc: 'Itching and scratching at both ears', __vetVisitId: 2002 },
+        { __id: 6003, petId: MISO, petName: 'Miso', category: 'Vet Visit', amount: 243.75,
+          date: d(-12), desc: 'Tartar and bad breath', __vetVisitId: 2003 },
+        { __id: 6004, petId: BELLA, petName: 'Bella', category: 'Medications', amount: 89.99,
+          date: d(-30), desc: 'Apoquel refill' },
+        { __id: 6005, petId: BELLA, petName: 'Bella', category: 'Food & Treats', amount: 64.25,
+          date: d(-9), desc: 'Large-breed kibble, 30 lb' },
+        { __id: 6006, petId: MISO, petName: 'Miso', category: 'Food & Treats', amount: 38.4,
+          date: d(-9), desc: 'Cat food, case of 24' },
+        { __id: 6007, petId: BELLA, petName: 'Bella', category: 'Grooming', amount: 75,
+          date: d(-21), desc: 'Bath and nails' },
+        { __id: 6008, petId: BELLA, petName: 'Bella', category: 'Boarding / Sitting', amount: 210,
+          date: d(-58), desc: '4 nights' },
+        { __id: 6009, petId: MISO, petName: 'Miso', category: 'Supplies & Toys', amount: 27.8,
+          date: d(-45), desc: 'Litter and a new scratcher' },
+        { __id: 6010, petId: BELLA, petName: 'Bella', category: 'Insurance', amount: 52,
+          date: d(-5), desc: 'Monthly premium' }
+      ]
+    };
+
+    var sitter = {
+      'sitter-owner-name': 'Sam Rivera',
+      'sitter-owner-phone': '(817) 555-0142',
+      'sitter-owner-email': 'sam@example.com',
+      'sitter-away-dates': d(21) + ' to ' + d(26),
+      'sitter-emerg-name': 'Jordan Rivera (sister)',
+      'sitter-emerg-phone': '(817) 555-0198',
+      'sitter-vet': 'Lakeside Animal Clinic \u2014 (817) 555-0110',
+      'sitter-emerg-vet': 'After-hours Animal ER \u2014 (817) 555-0177',
+      'sitter-instructions': 'Back door code is 4417. Mail goes on the counter. Bella sleeps in the bedroom, Miso stays downstairs.',
+      'sitter-feed-1001': '7am and 6pm',
+      'sitter-food-1001': '2 cups large-breed kibble',
+      'sitter-walk-1001': 'Two walks, morning and evening',
+      'sitter-meds-1001': 'Apoquel 16mg with breakfast and with dinner',
+      'sitter-supps-1001': 'Fish oil, one pump on dinner',
+      'sitter-behavior-1001': 'Pulls toward other dogs. Harness is by the door.',
+      'sitter-feed-1002': '7am and 6pm',
+      'sitter-food-1002': '1 pouch wet, dry topped off',
+      'sitter-walk-1002': 'Indoor only',
+      'sitter-meds-1002': 'Revolution Plus on the 1st',
+      'sitter-supps-1002': '',
+      'sitter-behavior-1002': 'Hides under the bed for the first day. That is normal.'
+    };
+
+    try {
+      localStorage.setItem('petPlannerData_v1', JSON.stringify(store));
+      localStorage.setItem('petSitterInfo', JSON.stringify(sitter));
+      /* Suppress the first-run nags — they are aimed at real owners, not visitors. */
+      var t = d(0);
+      localStorage.setItem('petPlannerSeenWelcome', t);
+      localStorage.setItem('backupReminderSnoozed', t);
+      localStorage.setItem('petPlannerFirstSeen', t);
+    } catch(e) {}
+  })();
   </script>
   <!-- Demo banner -->
   <div id="demo-banner" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#10b981,#059669);color:white;text-align:center;padding:10px 16px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;box-shadow:0 2px 12px rgba(0,0,0,0.25);">
-    <span style="font-size:13px;font-weight:600;">&#9733; DEMO VERSION — features are fully interactive but data resets on refresh</span>
-    <a href="https://www.etsy.com/listing/4487742972/pet-care-planner-app" target="_blank" rel="noopener" style="background:white;color:#059669;font-size:12px;font-weight:800;padding:6px 18px;border-radius:20px;text-decoration:none;white-space:nowrap;flex-shrink:0;">Get the Full Version &#8594;</a>
+    <span style="font-size:13px;font-weight:600;">&#9733; DEMO &mdash; sample data. Resets when you refresh.</span>
+    <a href="https://cleartrackapps.com/go/pawfolio/" rel="noopener" style="background:white;color:#059669;font-size:12px;font-weight:800;padding:6px 18px;border-radius:20px;text-decoration:none;white-space:nowrap;flex-shrink:0;">Get Pawfolio &mdash; $14.99 &#8594;</a>
   </div>
+
+  <!-- Persistent buy bar: the demo had no path to checkout at all before this. -->
+  <div id="demo-buybar" style="position:fixed;bottom:0;left:0;right:0;z-index:9998;background:#1f2937;color:#f9fafb;padding:10px 14px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;font-family:inherit;box-shadow:0 -2px 14px rgba(0,0,0,0.3);">
+    <span style="font-size:13px;line-height:1.35;text-align:center;"><strong style="font-weight:800;">This demo forgets.</strong> Pawfolio remembers &mdash; forever, offline, on your phone.</span>
+    <a href="https://cleartrackapps.com/go/pawfolio/" rel="noopener" style="background:#10b981;color:#fff;font-size:13px;font-weight:800;padding:8px 20px;border-radius:20px;text-decoration:none;white-space:nowrap;">Get it &mdash; $14.99</a>
+    <button id="demo-fresh-btn" type="button" style="background:none;border:1px solid rgba(249,250,251,0.35);color:#d1d5db;font-family:inherit;font-size:12px;font-weight:600;padding:7px 14px;border-radius:20px;cursor:pointer;white-space:nowrap;">Start fresh</button>
+  </div>
+  <script>
+  (function(){
+    var FRESH = 'pawfolioDemoFresh';
+    var btn = document.getElementById('demo-fresh-btn');
+    var bar = document.getElementById('demo-buybar');
+    /* Keep the bar from sitting on top of the last row of content. */
+    function pad(){ if(bar) document.body.style.paddingBottom = (bar.offsetHeight + 12) + 'px'; }
+    pad();
+    window.addEventListener('resize', pad);
+    if (!btn) return;
+    if (window.__demoFresh) btn.textContent = 'Show sample data';
+    btn.addEventListener('click', function(){
+      try {
+        if (window.__demoFresh) sessionStorage.removeItem(FRESH);
+        else sessionStorage.setItem(FRESH, '1');
+      } catch(e) {}
+      location.reload();
+    });
+  })();
+  </script>
 
   <!-- Mobile overlay -->
   <div id="sidebar-overlay"></div>
@@ -2252,7 +2415,7 @@
       ${data['sitter-behavior-'+p.__id] ? `<div class="field" style="margin-top:8px;"><div class="label">Behavioral Notes</div><div class="value">${esc(data['sitter-behavior-'+p.__id])}</div></div>` : ''}
     </div>`).join('')}
     ${data['sitter-instructions'] ? `<h2>Additional Instructions</h2><p>${esc(data['sitter-instructions'])}</p>` : ''}
-    </body></html>`);
+    <\/body><\/html>`);
     win.document.close();
     win.print();
   });
@@ -3684,7 +3847,7 @@ refreshAll();
       'li{margin-bottom:8px;font-size:13px;}footer{margin-top:26px;color:#94a3b8;font-size:11px;}</style></head><body>' +
       '<h1>Pawfolio Timeline</h1><p class="meta">'+esc(who)+' · printed '+esc(fdate(iso()))+'</p>' +
       (rows ? '<ol>'+rows+'</ol>' : '<p>No entries.</p>') +
-      '<footer>Created with Pawfolio</footer></body></html>';
+      '<footer>Created with Pawfolio<\/footer><\/body><\/html>';
     var w = window.open('', '_blank');
     if (!w){ say('Please allow pop-ups to print the timeline.'); return; }
     w.document.write(html); w.document.close();
