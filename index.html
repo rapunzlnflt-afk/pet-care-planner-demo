@@ -21,7 +21,7 @@
   <link rel="canonical" href="https://cleartrackapps.com/pet-care-planner-demo/">
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.10.2">
+                          <meta name="app-version" content="3.10.3">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -186,6 +186,24 @@
     .med-filter-btn.active { background: rgba(91,91,214,0.1); border-color: var(--accent-color); color: var(--accent-color); }
 
     /* Mobile */
+    /* v3.10.3 — printing the app itself should never put the navigation, the
+       filter controls or a row of action buttons on paper. The Print button
+       opens a clean printable page in a new window, but a blocked pop-up (or
+       Share -> Print on an iPhone) prints the app as it sits on screen, which
+       is where the overlapping first page of selectors and the Add update /
+       Edit / Delete / Open in Vet Visits buttons came from. */
+    @media print {
+      @page { margin: 12mm; }
+      * { word-break: normal !important; overflow-wrap: normal !important;
+          -webkit-hyphens: none !important; hyphens: none !important; }
+      .mobile-topbar, #sidebar-overlay, #sidebar, aside { display: none !important; }
+      #main-app button, #main-app select, #main-app input, #main-app textarea { display: none !important; }
+      #tab-timeline > .card { display: none !important; }
+      .pf-note-acts, .pf-upd-acts, .pf-upd-form { display: none !important; }
+      #main-app { display: block !important; opacity: 1 !important; }
+      body { background: #fff !important; }
+    }
+
     .mobile-topbar { display: none; position: fixed; top: 0; left: 0; right: 0; height: 56px; background: linear-gradient(135deg, #5B5BD6 0%, #8B5BD6 50%, #4C4CC8 100%); border-bottom: 1px solid rgba(255,255,255,0.15); align-items: center; padding: 0 16px; z-index: 1000; gap: 12px; }
     .mobile-topbar .topbar-title { font-size: 22px; font-weight: 700; color: white; flex: 1; margin: 0; font-family: 'Montserrat', sans-serif; text-align: left; padding-left: 4px; }
 .mobile-topbar .topbar-logo { width: 40px; height: 40px; border-radius: 8px; background: white; padding: 1px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); flex-shrink: 0; }     #hamburger-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; color: white; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; }     #hamburger-btn svg { display: block; width: 26px; height: 26px; stroke: white; stroke-width: 3; } { width: 40px; height: 40px; border-radius: 8px; background: white; padding: 1px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); flex-shrink: 0; }
@@ -3940,17 +3958,20 @@ refreshAll();
         '<\/span><span class="what">'+esc(p.body)+'<\/span><\/span><\/li>';
     }).join('');
     var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pawfolio Timeline</title>' +
-      '<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1e293b;padding:28px;line-height:1.55;}' +
-      'h1{color:'+ACCENT+';font-size:20px;margin:0 0 2px;}p.meta{color:#64748b;font-size:13px;margin:0 0 18px;}' +
-      'ol{margin:0;padding-left:22px;}' +
-      'li{margin-bottom:9px;font-size:14px;}' +
-      '.row{display:grid;grid-template-columns:102px minmax(0,1fr);column-gap:11px;align-items:start;}' +
-      '.when{font-size:13px;color:#64748b;line-height:1.4;font-variant-numeric:tabular-nums;}' +
-      '.when>span{display:block;}.when .d{font-weight:700;color:#334155;}.when .p{color:'+ACCENT+';}' +
+      '<style>*{word-break:normal;overflow-wrap:normal;word-wrap:normal;-webkit-hyphens:none;hyphens:none;}' +
+      'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1e293b;padding:24px;line-height:1.4;}' +
+      'h1{color:'+ACCENT+';font-size:17px;margin:0 0 2px;white-space:nowrap;}p.meta{color:#64748b;font-size:12px;margin:0 0 12px;}' +
+      'ol{margin:0;padding-left:20px;}' +
+      'li{margin-bottom:6px;font-size:12.5px;line-height:1.35;}' +
+      '.row{display:grid;grid-template-columns:100px minmax(0,1fr);column-gap:10px;align-items:start;}' +
+      '.when{font-size:11.5px;color:#64748b;line-height:1.3;font-variant-numeric:tabular-nums;}' +
+      '.when>span{display:block;white-space:nowrap;}.when .d{font-weight:700;color:#334155;}.when .p{color:'+ACCENT+';}' +
       '.what{min-width:0;}' +
-      '@media print{li,.row{break-inside:avoid;page-break-inside:avoid;}}' +
+      '@media print{@page{margin:12mm;}body{padding:0;}li,.row{break-inside:avoid;page-break-inside:avoid;}' +
+      'h1{font-size:14pt;}p.meta{font-size:8.5pt;}li{font-size:9.5pt;line-height:1.32;margin-bottom:4.5pt;}' +
+      '.when{font-size:8.5pt;line-height:1.28;}footer{margin-top:12pt;font-size:8pt;}}' +
       '@media (max-width:430px){.row{grid-template-columns:88px minmax(0,1fr);column-gap:8px;}}' +
-      'footer{margin-top:26px;color:#94a3b8;font-size:13px;}<\/style><\/head><body>' +
+      'footer{margin-top:20px;color:#94a3b8;font-size:12px;}<\/style><\/head><body>' +
       '<h1>Pawfolio Timeline</h1><p class="meta">'+esc(who)+' · printed '+esc(fdate(iso()))+'</p>' +
       (rows ? '<ol>'+rows+'</ol>' : '<p>No entries.</p>') +
       '<footer>Created with Pawfolio<\/footer><\/body><\/html>';
