@@ -21,7 +21,7 @@
   <link rel="canonical" href="https://cleartrackapps.com/pet-care-planner-demo/">
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.10.10">
+                          <meta name="app-version" content="3.10.11">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -248,6 +248,15 @@
       .card p[style*="font-size: 14px"], .card span[style*="font-size: 14px"], .card div[style*="font-size: 14px"] { font-size: 17px !important; line-height: 1.5 !important; }
       .card .stat-label { font-size: 13px !important; letter-spacing: 0 !important; }
       .stat-label { font-size: 13px !important; letter-spacing: 0 !important; }
+    }
+
+    /* Scripture line — shared app footer, shown once on every screen */
+    .foot-verse { margin-top: 1.25rem; font-size: .9rem; font-style: italic;
+      line-height: 1.5; color: var(--text-secondary); }
+    .foot-verse cite { font-style: normal; font-size: .82em; opacity: .8;
+      white-space: nowrap; }
+    @media print {
+      .app-footer, .foot-verse { display: block !important; }
     }
 
     /* Dark mode */
@@ -1555,6 +1564,11 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
 
     </section>
 
+    <footer class="app-footer">
+     <p class="foot-verse">&ldquo;The righteous care for the needs of their animals.&rdquo;
+       <cite>&mdash; Proverbs 12:10</cite></p>
+    </footer>
+
    </main>
   </div>
 
@@ -2503,7 +2517,9 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       .label { font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
       .value { font-size: 14px; font-weight: 600; }
       .pet-section { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-top: 12px; }
-      @media print { body { padding: 0; } h1 { margin: 0 0 20px; } }
+      .foot-verse { margin-top: 1.25rem; font-size: 12px; font-style: italic; line-height: 1.5; color: #718096; }
+      .foot-verse cite { font-style: normal; font-size: .82em; opacity: .8; white-space: nowrap; }
+      @media print { body { padding: 0; } h1 { margin: 0 0 20px; } .foot-verse { display: block !important; } }
     </style></head><body>
     <h1>Pet Sitter Instructions</h1>
     <h2>Owner Info</h2>
@@ -4002,9 +4018,12 @@ refreshAll();
       'h1{font-size:14pt;}p.meta{font-size:8.5pt;}li{font-size:9.5pt;line-height:1.32;margin-bottom:4.5pt;}' +
       '.when{font-size:8.5pt;line-height:1.28;}footer{margin-top:12pt;font-size:8pt;}}' +
       '@media (max-width:430px){.row{grid-template-columns:88px minmax(0,1fr);column-gap:8px;}}' +
-      'footer{margin-top:20px;color:#94a3b8;font-size:12px;}<\/style><\/head><body>' +
+      'footer{margin-top:20px;color:#94a3b8;font-size:12px;}' +
+      '.foot-verse{margin-top:14px;font-size:12px;font-style:italic;line-height:1.5;color:#64748b;}' +
+      '.foot-verse cite{font-style:normal;font-size:.82em;opacity:.8;white-space:nowrap;}<\/style><\/head><body>' +
       '<h1>Pawfolio Timeline</h1><p class="meta">'+esc(who)+' · printed '+esc(fdate(iso()))+'</p>' +
       (rows ? '<ol>'+rows+'</ol>' : '<p>No entries.</p>') +
+      '<p class="foot-verse">&ldquo;The righteous care for the needs of their animals.&rdquo; <cite>&mdash; Proverbs 12:10<\/cite><\/p>' +
       '<footer>Created with Pawfolio<\/footer><\/body><\/html>';
     var w = window.open('', '_blank');
     if (!w){ say('Please allow pop-ups to print the timeline.'); return; }
