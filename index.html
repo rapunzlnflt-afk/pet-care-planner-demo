@@ -21,7 +21,7 @@
   <link rel="canonical" href="https://cleartrackapps.com/pet-care-planner-demo/">
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.10.12">
+                          <meta name="app-version" content="3.10.13">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -525,15 +525,21 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       'sitter-feed-1001': '7am and 6pm',
       'sitter-food-1001': '2 cups large-breed kibble',
       'sitter-walk-1001': 'Two walks, morning and evening',
-      'sitter-meds-1001': 'Apoquel 16mg with breakfast and with dinner',
-      'sitter-supps-1001': 'Fish oil, one pump on dinner',
       'sitter-behavior-1001': 'Pulls toward other dogs. Harness is by the door.',
       'sitter-feed-1002': '7am and 6pm',
       'sitter-food-1002': '1 pouch wet, dry topped off',
       'sitter-walk-1002': 'Indoor only',
-      'sitter-meds-1002': 'Revolution Plus on the 1st',
-      'sitter-supps-1002': '',
-      'sitter-behavior-1002': 'Hides under the bed for the first day. That is normal.'
+      'sitter-behavior-1002': 'Hides under the bed for the first day. That is normal.',
+      /* Which of the seeded medications/supplements the sitter needs to know
+         about, keyed by the medication __id — same shape the paid app saves. */
+      'sitter-selmeds-1001': {
+        5001: { include: true,  instructions: '1 tablet with breakfast and with dinner' },
+        5002: { include: false, instructions: '' },
+        5003: { include: true,  instructions: 'One pump on dinner' }
+      },
+      'sitter-selmeds-1002': {
+        5004: { include: true, instructions: 'Apply on the 1st' }
+      }
     };
 
     try {
@@ -2303,6 +2309,62 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
   window.deleteExpense = id => { deleteItem('expenses', id); refreshAll(); };
 
   // ============ PET SITTER INFO ============
+  // Mirrors the paid app: meds/supplements on the sitter sheet are picked from the
+  // entries already in the Medications tab, not retyped as free text.
+  function sitterMedType(m) { return (m && m.type === 'supplement') ? 'supplement' : 'medication'; }
+
+  // Meds/supplements of one `kind` the user has selected for a given pet's sitter
+  // sheet. Joins the saved selection map against the CURRENT medications list, so
+  // entries deleted from the app are silently skipped.
+  function sitterSelectedMeds(petId, data, kind) {
+    const sel = (data['sitter-selmeds-'+petId]) || {};
+    const meds = getList('medications').filter(m => m.petId === petId && sitterMedType(m) === kind);
+    const out = [];
+    meds.forEach(m => {
+      const s = sel[m.__id];
+      if(s && s.include) {
+        out.push({ name: m.name||'', dosage: m.dosage||'', frequency: m.frequency||'', instructions: (s.instructions||'').trim() });
+      }
+    });
+    return out;
+  }
+
+  // Build the per-pet picker for one `kind` on the sitter form: a checkbox plus a
+  // reveal-on-check sitter-instructions input per entry. Selections live in
+  // petSitterInfo under 'sitter-selmeds-<petId>', keyed by the entry's __id.
+  function sitterMedPickerHTML(p, data, kind) {
+    const supp = kind === 'supplement';
+    const meds = getList('medications').filter(m => m.petId === p.__id && sitterMedType(m) === kind);
+    if(!meds.length) {
+      return `<p class="font-body text-xs text-secondary italic">No ${supp ? 'supplements' : 'medications'} in your app for this pet. Add them in the Medications tab to include them here.</p>`;
+    }
+    const sel = (data['sitter-selmeds-'+p.__id]) || {};
+    return `<div style="display:flex;flex-direction:column;gap:8px;">` + meds.map(m => {
+      const s = sel[m.__id] || {};
+      const checked = !!s.include;
+      const detail = [m.dosage, m.frequency].filter(Boolean).join(' · ');
+      const chkId = 'sitter-medchk-'+p.__id+'-'+m.__id;
+      const insId = 'sitter-medins-'+p.__id+'-'+m.__id;
+      return `
+        <div style="border:1px solid var(--border-color,rgba(0,0,0,0.1));border-radius:8px;padding:8px 10px;">
+          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="${chkId}" data-medins="${insId}" ${checked?'checked':''} style="margin-top:3px;flex-shrink:0;width:18px;height:18px;display:inline-block;">
+            <span><span class="font-body text-sm font-medium text-primary">${esc(m.name||'')}</span>${detail?`<span class="font-body text-xs text-secondary"> · ${esc(detail)}</span>`:''}</span>
+          </label>
+          <input type="text" id="${insId}" value="${esc(s.instructions||'')}" placeholder="Sitter instructions, e.g. ${supp ? '1 scoop with dinner' : '1 tablet with breakfast'}" style="margin-top:6px;display:${checked?'block':'none'};">
+        </div>`;
+    }).join('') + `</div>`;
+  }
+
+  // One printable field per kind, omitted entirely when nothing is ticked.
+  function sitterPrintField(label, items) {
+    if(!items.length) return '';
+    return `<div class="field"><div class="label">${label}</div>${items.map(m => {
+      const detail = [m.dosage, m.frequency].filter(Boolean).join(', ');
+      return `<div class="value"><strong>${esc(m.name)}</strong>${detail?` (${esc(detail)})`:''}${m.instructions?` — ${esc(m.instructions)}`:''}</div>`;
+    }).join('')}</div>`;
+  }
+
   function renderSitterPets() {
     const pets = getList('pets');
     const section = document.getElementById('sitter-pets-section');
@@ -2312,23 +2374,37 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       <div class="card p-5 mb-4" style="border-top:4px solid var(--accent-color-2);">
         <h3 class="font-heading text-sm font-bold text-primary mb-3">${esc(p.name)} (${esc(p.species)})</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div><label class="block font-body text-xs text-secondary mb-1">Feeding Schedule</label><input type="text" id="sitter-feed-${p.__id}" value="${esc(sitterData['sitter-feed-'+p.__id]||'')}" placeholder="e.g., 1 cup twice daily at 7am & 6pm"></div>
-          <div><label class="block font-body text-xs text-secondary mb-1">Food Brand</label><input type="text" id="sitter-food-${p.__id}" value="${esc(sitterData['sitter-food-'+p.__id]||'')}" placeholder="e.g., Royal Canin Adult"></div>
+          <div><label class="block font-body text-xs text-secondary mb-1">When to Feed</label><input type="text" id="sitter-feed-${p.__id}" value="${esc(sitterData['sitter-feed-'+p.__id]||'')}" placeholder="e.g., 1 cup twice daily at 7am & 6pm"></div>
+          <div><label class="block font-body text-xs text-secondary mb-1">Feeding Instructions</label><input type="text" id="sitter-food-${p.__id}" value="${esc(sitterData['sitter-food-'+p.__id]||'')}" placeholder="e.g., 1 cup Royal Canin, soak in warm water"></div>
           <div><label class="block font-body text-xs text-secondary mb-1">Walk Schedule</label><input type="text" id="sitter-walk-${p.__id}" value="${esc(sitterData['sitter-walk-'+p.__id]||'')}" placeholder="e.g., 3x daily, 15 min each"></div>
-          <div><label class="block font-body text-xs text-secondary mb-1">Medications (if any)</label><input type="text" id="sitter-meds-${p.__id}" value="${esc(sitterData['sitter-meds-'+p.__id]||'')}" placeholder="e.g., 1 Apoquel tablet with breakfast"></div>
-          <div><label class="block font-body text-xs text-secondary mb-1">Supplements (if any)</label><input type="text" id="sitter-supps-${p.__id}" value="${esc(sitterData['sitter-supps-'+p.__id]||'')}" placeholder="e.g., 1 joint chew with dinner"></div>
         </div>
-        <div style="margin-top:10px;"><label class="block font-body text-xs text-secondary mb-1">Behavioral Notes</label><textarea id="sitter-behavior-${p.__id}" rows="2" placeholder="Fears, quirks, commands they know, do not feed..."></textarea></div>
+        <div style="margin-top:10px;">
+          <label class="block font-body text-xs text-secondary mb-1">Medications</label>
+          ${sitterMedPickerHTML(p, sitterData, 'medication')}
+        </div>
+        <div style="margin-top:10px;">
+          <label class="block font-body text-xs text-secondary mb-1">Supplements</label>
+          ${sitterMedPickerHTML(p, sitterData, 'supplement')}
+        </div>
+        <div style="margin-top:10px;"><label class="block font-body text-xs text-secondary mb-1">Additional Notes</label><textarea id="sitter-behavior-${p.__id}" rows="2" placeholder="Fears, quirks, commands they know, do not feed..."></textarea></div>
       </div>`).join('');
     // Restore values
     setTimeout(() => {
       pets.forEach(p => {
-        ['sitter-feed-','sitter-food-','sitter-walk-','sitter-meds-','sitter-supps-','sitter-behavior-'].forEach(prefix => {
+        ['sitter-feed-','sitter-food-','sitter-walk-','sitter-behavior-'].forEach(prefix => {
           const el = document.getElementById(prefix + p.__id);
           if(el && sitterData[prefix + p.__id]) el.value = sitterData[prefix + p.__id];
         });
       });
     }, 50);
+    // Reveal each med's instructions input only while its checkbox is ticked.
+    section.querySelectorAll('input[type="checkbox"][data-medins]').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const ins = document.getElementById(chk.getAttribute('data-medins'));
+        if(ins) ins.style.display = chk.checked ? 'block' : 'none';
+        autoSaveSitter();
+      });
+    });
   }
 
   function collectSitterData() {
@@ -2344,11 +2420,27 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       'sitter-emerg-vet': (document.getElementById('sitter-emerg-vet')||{}).value||'',
       'sitter-instructions': (document.getElementById('sitter-instructions')||{}).value||'',
     };
+    // Preserve any sitter-selmeds-* saved previously; only the pets whose med
+    // pickers are currently in the DOM get their selections rebuilt.
+    const prior = JSON.parse(DS.getItem('petSitterInfo') || '{}');
+    Object.keys(prior).forEach(k => { if(k.indexOf('sitter-selmeds-') === 0) data[k] = prior[k]; });
     pets.forEach(p => {
-      ['sitter-feed-','sitter-food-','sitter-walk-','sitter-meds-','sitter-supps-','sitter-behavior-'].forEach(prefix => {
+      ['sitter-feed-','sitter-food-','sitter-walk-','sitter-behavior-'].forEach(prefix => {
         const el = document.getElementById(prefix + p.__id);
         if(el) data[prefix + p.__id] = el.value;
       });
+      // Gather med checkbox selections if this pet's picker is rendered.
+      const meds = getList('medications').filter(m => m.petId === p.__id);
+      const anyChk = meds.length && document.getElementById('sitter-medchk-'+p.__id+'-'+meds[0].__id);
+      if(anyChk) {
+        const sel = {};
+        meds.forEach(m => {
+          const chk = document.getElementById('sitter-medchk-'+p.__id+'-'+m.__id);
+          const ins = document.getElementById('sitter-medins-'+p.__id+'-'+m.__id);
+          if(chk) sel[m.__id] = { include: !!chk.checked, instructions: ins ? ins.value : '' };
+        });
+        data['sitter-selmeds-'+p.__id] = sel;
+      }
     });
     return data;
   }
@@ -2406,12 +2498,12 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
 
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-            <div><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Feeding Schedule</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-feed-'+p.__id])||'—'}</p></div>
-            <div><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Food Brand</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-food-'+p.__id])||'—'}</p></div>
+            <div><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">When to Feed</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-feed-'+p.__id])||'—'}</p></div>
+            <div><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Feeding Instructions</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-food-'+p.__id])||'—'}</p></div>
             <div><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Walk Schedule</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-walk-'+p.__id])||'—'}</p></div>
-            <div><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Medications</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-meds-'+p.__id])||'—'}</p></div>
-            <div><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Supplements</p><p class="font-body text-sm font-medium text-primary">${esc(data['sitter-supps-'+p.__id])||'—'}</p></div>
-            ${data['sitter-behavior-'+p.__id]?`<div style="grid-column:span 2;"><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Behavioral Notes</p><p class="font-body text-sm text-primary">${esc(data['sitter-behavior-'+p.__id])}</p></div>`:''}
+            ${sitterSelectedMeds(p.__id, data, 'medication').length ? `<div><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Medications</p>${sitterSelectedMeds(p.__id, data, 'medication').map(m => `<p class="font-body text-sm font-medium text-primary">${esc(m.name)}${[m.dosage,m.frequency].filter(Boolean).length?` (${esc([m.dosage,m.frequency].filter(Boolean).join(', '))})`:''}${m.instructions?` — ${esc(m.instructions)}`:''}</p>`).join('')}</div>` : ''}
+            ${sitterSelectedMeds(p.__id, data, 'supplement').length ? `<div><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Supplements</p>${sitterSelectedMeds(p.__id, data, 'supplement').map(m => `<p class="font-body text-sm font-medium text-primary">${esc(m.name)}${[m.dosage,m.frequency].filter(Boolean).length?` (${esc([m.dosage,m.frequency].filter(Boolean).join(', '))})`:''}${m.instructions?` — ${esc(m.instructions)}`:''}</p>`).join('')}</div>` : ''}
+            ${data['sitter-behavior-'+p.__id]?`<div style="grid-column:span 2;"><p class="font-body" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Additional Notes</p><p class="font-body text-sm text-primary">${esc(data['sitter-behavior-'+p.__id])}</p></div>`:''}
           </div>
         </div>`;
       }).join('')}
@@ -2542,13 +2634,13 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       ${p.allergies ? `<p style="color:#e53e3e;font-weight:700;">⚠ Allergies: ${p.allergies}</p>` : ''}
       ${(p.microchip || p.vet) ? `<div class="grid" style="margin-bottom:8px;">${p.microchip ? `<div class="field"><div class="label">Microchip</div><div class="value">${p.microchip}</div></div>` : ''}${p.vet ? `<div class="field"><div class="label">Primary Vet</div><div class="value">${p.vet}</div></div>` : ''}</div>` : ''}
       <div class="grid">
-        <div class="field"><div class="label">Feeding Schedule</div><div class="value">${esc(data['sitter-feed-'+p.__id])}</div></div>
-        <div class="field"><div class="label">Food Brand</div><div class="value">${esc(data['sitter-food-'+p.__id])}</div></div>
+        <div class="field"><div class="label">When to Feed</div><div class="value">${esc(data['sitter-feed-'+p.__id])}</div></div>
+        <div class="field"><div class="label">Feeding Instructions</div><div class="value">${esc(data['sitter-food-'+p.__id])}</div></div>
         <div class="field"><div class="label">Walk Schedule</div><div class="value">${esc(data['sitter-walk-'+p.__id])}</div></div>
-        <div class="field"><div class="label">Medications</div><div class="value">${esc(data['sitter-meds-'+p.__id])}</div></div>
-        <div class="field"><div class="label">Supplements</div><div class="value">${esc(data['sitter-supps-'+p.__id])}</div></div>
+        ${sitterPrintField('Medications', sitterSelectedMeds(p.__id, data, 'medication'))}
+        ${sitterPrintField('Supplements', sitterSelectedMeds(p.__id, data, 'supplement'))}
       </div>
-      ${data['sitter-behavior-'+p.__id] ? `<div class="field" style="margin-top:8px;"><div class="label">Behavioral Notes</div><div class="value">${esc(data['sitter-behavior-'+p.__id])}</div></div>` : ''}
+      ${data['sitter-behavior-'+p.__id] ? `<div class="field" style="margin-top:8px;"><div class="label">Additional Notes</div><div class="value">${esc(data['sitter-behavior-'+p.__id])}</div></div>` : ''}
     </div>`).join('')}
     ${data['sitter-instructions'] ? `<h2>Additional Instructions</h2><p>${esc(data['sitter-instructions'])}</p>` : ''}
     <p class="foot-verse">&ldquo;The righteous care for the needs of their animals.&rdquo; <cite>&mdash; Proverbs 12:10<\/cite><\/p>
