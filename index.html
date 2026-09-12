@@ -3,6 +3,14 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Funnel markers (see the block at the end of this file) push real paths such as
+       /pet-care-planner-demo/edited/ so Cloudflare Web Analytics can report them.
+       pushState moves the document URL, which would otherwise re-base every relative
+       URL in the page (./icon-192.png, assets/pet-bella.jpg) onto the pushed path and
+       404 it. Pinning the base here keeps every relative URL resolving against the
+       demo root no matter which marker path is currently showing. Measurement only —
+       nothing rendered changes. If the demo is ever moved off this path, update this. -->
+  <base href="/pet-care-planner-demo/">
   <title>Pawfolio — Try the Demo</title>
   <meta name="description" content="Try the pet care planner in your browser — vet visits, medications, weight and receipts. Free demo, nothing to install, no signup.">
   <meta property="og:type" content="website">
@@ -21,7 +29,7 @@
   <link rel="canonical" href="https://cleartrackapps.com/pet-care-planner-demo/">
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.10.14">
+                          <meta name="app-version" content="3.11.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -590,7 +598,15 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
         if (window.__demoFresh) sessionStorage.removeItem(FRESH);
         else sessionStorage.setItem(FRESH, '1');
       } catch(e) {}
-      location.reload();
+      /* Measurement only (see the funnel-marker block at the end of this file).
+         Push /fresh/ so the tap is readable in Cloudflare's Paths report, hold the
+         reload briefly so the beacon's request can leave before navigation cancels
+         it, and always come back to the demo root rather than reloading whatever
+         marker path is currently in the address bar. Nothing visual changes. */
+      var go = function(){ location.replace('/pet-care-planner-demo/' + location.search); };
+      var marked = false;
+      try { marked = !!(window.__pawfolioMark && window.__pawfolioMark('fresh')); } catch(e) {}
+      if (marked) setTimeout(go, 300); else go();
     });
   })();
   </script>
@@ -6701,5 +6717,128 @@ try {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
+})();
+</script>
+
+<!-- ===== FUNNEL MARKERS (measurement only — nothing visual changes) =====
+     The demo had no instrumentation at all: we could see arrivals at
+     /pet-care-planner-demo/ but not whether visitors touched anything once
+     inside. There is no tag manager here, so this mirrors the mechanism the
+     storefront quiz already uses (pawfolio/quiz.js, function mark): Cloudflare
+     Web Analytics' beacon patches history.pushState, so pushing a real path is
+     what makes a step appear in the Paths report.
+
+       /pet-care-planner-demo/            arrived
+       /pet-care-planner-demo/fresh/      tapped the bottom-bar #demo-fresh-btn
+       /pet-care-planner-demo/edited/     first genuine keystroke/change in a field
+       /pet-care-planner-demo/added-pet/  saved a pet of their own
+       /pet-care-planner-demo/printed/    generated a print sheet
+
+     Each fires at most once per visit (sessionStorage, so it survives the
+     reload the bottom-bar button does). Stub index.html files exist at each of
+     those four paths so a refresh or a shared link redirects instead of 404ing;
+     the stubs deliberately carry no beacon, so a direct hit on one cannot
+     inflate the very counts they exist to protect.
+
+     The seeded two-pet sample household must never count as the visitor
+     editing: every listener below requires event.isTrusted (only the browser
+     itself sets that) AND an "armed" flag that is only raised once load and
+     first render are done. Nothing in this file dispatches synthetic input /
+     change events, and nothing in the app reads location.pathname, so pushing
+     a path cannot change what renders. A <base href> in the head keeps the
+     page's relative URLs resolving against the demo root while a marker path
+     is showing. -->
+<script>
+(function(){
+  'use strict';
+
+  var BASE = '/pet-care-planner-demo/';
+  var KEY  = 'pawfolioDemoMark:';
+  var armed = false;
+
+  function seen(seg){
+    try { return sessionStorage.getItem(KEY + seg) === '1'; } catch(e){ return true; }
+  }
+
+  /* Returns true only when this call is the one that pushed the path. */
+  function mark(seg){
+    if (!seg || seen(seg)) return false;
+    try { sessionStorage.setItem(KEY + seg, '1'); } catch(e){}
+    try {
+      history.pushState({ pf: seg }, '', BASE + seg + '/' + location.search);
+    } catch(e){ /* history unavailable — measurement is not worth breaking the demo over */ }
+    return true;
+  }
+  window.__pawfolioMark = mark;
+
+  /* Arm after the sample-data seed and the first render have finished. */
+  function arm(){ armed = true; }
+  if (document.readyState === 'complete') setTimeout(arm, 600);
+  else window.addEventListener('load', function(){ setTimeout(arm, 600); });
+
+  function isField(el){
+    if (!el || !el.tagName) return false;
+    var t = el.tagName;
+    return t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || el.isContentEditable === true;
+  }
+
+  /* ---- edited/ : first real change or keystroke in any field, anywhere ---- */
+  function onEdit(e){
+    if (!armed || !e || !e.isTrusted || !isField(e.target)) return;
+    if (e.type === 'keydown'){
+      var k = e.key || '';
+      /* Tabbing through or arrowing around is not editing. */
+      if (k.length !== 1 && k !== 'Backspace' && k !== 'Delete' && k !== 'Enter') return;
+    }
+    mark('edited');
+  }
+  document.addEventListener('input',   onEdit, true);
+  document.addEventListener('change',  onEdit, true);
+  document.addEventListener('keydown', onEdit, true);
+
+  /* ---- added-pet/ : the pets list actually grew after a real submit ----
+     #pet-form carries several submit handlers (add, and an edit override that
+     updates in place), so the only reliable test is whether the list is longer
+     once they have all run. Editing a sample pet therefore does not count. */
+  function petCount(){
+    try {
+      var l = (typeof window.getList === 'function') ? window.getList('pets') : null;
+      return (l && typeof l.length === 'number') ? l.length : -1;
+    } catch(e){ return -1; }
+  }
+  document.addEventListener('submit', function(e){
+    if (!armed || !e || !e.isTrusted) return;
+    var f = e.target;
+    if (!f || f.id !== 'pet-form') return;
+    var before = petCount();
+    if (before < 0) return;
+    setTimeout(function(){
+      var after = petCount();
+      if (after > before) mark('added-pet');
+    }, 250);
+  }, true);
+
+  /* ---- printed/ : a print sheet was generated ----
+     Both sheets (sitter and timeline) build their document in a blank popup —
+     window.open('', '_blank') — and nothing else in the app opens a blank
+     window, so wrapping it catches either sheet without depending on a button
+     id or label. The delegated click below is a belt-and-braces fallback for
+     any future print trigger; the once-per-visit key means only one of the two
+     can ever push the path. */
+  try {
+    var _open = window.open;
+    if (typeof _open === 'function'){
+      window.open = function(url){
+        if (armed && (url === '' || url == null || url === 'about:blank')) mark('printed');
+        return _open.apply(window, arguments);
+      };
+    }
+  } catch(e){}
+
+  document.addEventListener('click', function(e){
+    if (!armed || !e || !e.isTrusted) return;
+    var el = e.target && e.target.closest ? e.target.closest('button[id], a[id]') : null;
+    if (el && /print/i.test(el.id)) mark('printed');
+  }, true);
 })();
 </script>
