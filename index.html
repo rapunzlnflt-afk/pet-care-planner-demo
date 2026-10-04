@@ -29,7 +29,7 @@
   <link rel="canonical" href="https://cleartrackapps.com/pet-care-planner-demo/">
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.11.3">
+                          <meta name="app-version" content="3.12.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -207,6 +207,17 @@
     .delete-x { background: none; border: none; color: #5B5BD6; font-size: 15px; font-weight: 600; cursor: pointer; padding: 0 4px; line-height: 1; font-family: Arial, sans-serif; }
     .med-filter-btn { background: transparent; border: 1.5px solid var(--border-color); color: var(--text-secondary); font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 999px; cursor: pointer; }
     .med-filter-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
+    .pf-dose-box { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(91,91,214,0.06); border: 1px solid rgba(91,91,214,0.18); }
+    .pf-dose-btns { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .pf-dose-btns button { font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; min-height: 40px; }
+    .pf-dose-given { background: #5B5BD6; color: #fff; border: 1px solid #5B5BD6; }
+    .pf-dose-skip { background: transparent; color: var(--text-primary); border: 1px solid var(--border-color); }
+    #med-dose-times.pf-rolling .dose-time-remove { display: none; }
+    .pf-dose-missed { margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: rgba(180,83,9,0.08); border: 1px solid rgba(180,83,9,0.25); color: #7c2d12; font-family: 'Karla', sans-serif; font-size: 14px; line-height: 1.4; }
+    .pf-dose-early { display: inline-block; margin-top: 6px; background: none; border: none; padding: 4px 0; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700; color: #4338ca; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+    .pf-dose-undo { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #1f2937; color: #fff; border-radius: 8px; padding: 6px 6px 6px 12px; margin-bottom: 8px; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700; }
+    .pf-dose-undo button { flex: 0 0 auto; background: none; border: 1px solid rgba(255,255,255,0.5); color: #fff; border-radius: 6px; padding: 5px 14px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .pf-share-btn { display: block; width: 100%; margin-top: 8px; background: #5B5BD6; color: #fff; border: none; border-radius: 10px; padding: 11px; font-family: 'Karla', sans-serif; font-size: 15px; font-weight: 700; }
     .med-filter-btn.active { background: rgba(91,91,214,0.1); border-color: var(--accent-color); color: var(--accent-color); }
 
     /* Mobile */
@@ -476,7 +487,13 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       medications: [
         { __id: 5001, petId: BELLA, petName: 'Bella', type: 'medication', name: 'Apoquel',
           dosage: '16 mg', frequency: 'Twice daily', start: d(-96), refill: d(9),
-          vet: 'Dr. Reyes', brand: '', notes: 'For the seasonal itching' },
+          vet: 'Dr. Reyes', brand: '', notes: 'For the seasonal itching',
+          doseTimes: ['08:00', '20:00'], doseMode: 'fixed', missedRule: 'skip', demoLastGivenHoursAgo: 1 },
+        { __id: 5005, petId: BELLA, petName: 'Bella', type: 'medication', name: 'Carprofen (Rimadyl)',
+          dosage: '75 mg', frequency: 'Twice daily', start: d(-12), refill: d(18),
+          vet: 'Dr. Reyes', brand: '', notes: 'Give with food',
+          doseTimes: ['08:00'], doseMode: 'rolling', doseEvery: 12, missedRule: 'note',
+          missedNote: 'Call Dr. Reyes before giving a late dose.', demoLastGivenHoursAgo: 11, demoGivenBy: 'Jordan (sitter)' },
         { __id: 5002, petId: BELLA, petName: 'Bella', type: 'medication', name: 'Heartgard Plus',
           dosage: '1 chew', frequency: 'Monthly', start: d(-278), refill: d(3),
           vet: 'Dr. Reyes', brand: '', notes: 'Heartworm prevention' },
@@ -485,7 +502,11 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
           vet: '', brand: 'Nordic Naturals', notes: 'Coat and joints' },
         { __id: 5004, petId: MISO, petName: 'Miso', type: 'medication', name: 'Revolution Plus',
           dosage: '1 tube', frequency: 'Monthly', start: d(-120), refill: d(6),
-          vet: 'Dr. Reyes', brand: '', notes: 'Flea and tick' }
+          vet: 'Dr. Reyes', brand: '', notes: 'Flea and tick' },
+        { __id: 5006, petId: MISO, petName: 'Miso', type: 'medication', name: 'Amoxicillin',
+          dosage: '50 mg', frequency: 'Twice daily', start: d(-34), refill: '',
+          vet: 'Dr. Reyes', brand: '', notes: 'Finished the 10-day course',
+          doseTimes: ['08:00', '20:00'], doseMode: 'fixed', archived: d(-24) }
       ],
       weights: [
         { __id: 3001, petId: BELLA, petName: 'Bella', lbs: 64.2, date: d(-278), notes: '' },
@@ -1113,6 +1134,17 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     <!-- MEDICATIONS TAB -->
     <section id="tab-medications" class="tab-content">
      <h2 class="font-heading text-2xl font-bold text-primary mb-4">Medications</h2>
+     <div id="pf-dose-share" class="card mb-5" style="padding:8px 12px;border-left:3px solid #5B5BD6;">
+      <div id="pf-share-bar" role="button" tabindex="0" aria-expanded="false" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+       <div class="font-heading text-sm font-bold text-primary" style="flex:1;min-width:0;line-height:1.2;">Share doses with a sitter</div>
+       <span id="pf-share-caret" aria-hidden="true" style="flex:0 0 auto;font-size:20px;font-weight:bold;line-height:1;margin-left:10px;color:#64748b;transition:transform 0.15s;">&#9656;</span>
+      </div>
+      <div id="pf-share-body" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color, #e5e7eb);">
+       <p class="font-body text-sm text-secondary" style="line-height:1.5;">In Pawfolio Complete, you send your sitter a link. They see the medications you choose, check off each dose, and get reminders. You see who gave each dose.</p>
+       <button type="button" class="pf-share-btn" disabled style="opacity:0.55;cursor:not-allowed;">Create sitter link</button>
+       <p class="font-body text-xs text-secondary" style="margin-top:8px;">Not available in the demo.</p>
+      </div>
+     </div>
      <div class="card p-5 mb-5" style="border-top:4px solid var(--accent-color);">
       <h3 id="med-form-title" class="font-heading text-base font-bold text-primary mb-4">Add a Medication</h3>
       <div id="med-edit-banner" style="display:none;background:linear-gradient(135deg,rgba(91,91,214,0.12),rgba(91,91,214,0.04));border:1px solid #5B5BD6;border-radius:8px;padding:10px 14px;margin:0 0 14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
@@ -1227,6 +1259,40 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
          <label class="block font-body text-sm text-secondary mb-1">Brand</label>
          <input type="text" id="med-brand" placeholder="e.g., Nutramax Cosequin">
         </div>
+       </div>
+       <div>
+        <label for="med-dose-mode" class="block font-body text-sm text-secondary mb-1">Dose Timing</label>
+        <select id="med-dose-mode" style="margin-bottom:10px;">
+         <option value="fixed">At set times each day</option>
+         <option value="rolling">Every few hours (rolling)</option>
+        </select>
+        <div id="med-dose-every-row" style="display:none;align-items:center;gap:8px;margin-bottom:10px;">
+         <span class="font-body text-sm text-secondary">Every</span>
+         <input type="number" id="med-dose-every" min="1" max="72" step="1" inputmode="numeric" placeholder="6" style="width:80px;">
+         <span class="font-body text-sm text-secondary">hours</span>
+        </div>
+        <label id="med-dose-label" class="block font-body text-sm text-secondary mb-1">Dose Times</label>
+        <div id="med-dose-times"></div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;">
+         <button type="button" id="med-dose-add" class="btn-secondary" style="padding:6px 12px;font-size:15px;width:auto;">+ Add dose time</button>
+         <div style="display:flex;align-items:center;gap:8px;">
+          <span class="font-body text-sm text-secondary" style="white-space:nowrap;">Until</span>
+          <input type="date" id="med-dose-end" style="width:auto;">
+         </div>
+        </div>
+        <p id="med-dose-hint" class="font-body text-xs text-secondary mt-1 italic"></p>
+       </div>
+       <div>
+        <label for="med-missed" id="med-missed-label" class="block font-body text-sm text-secondary mb-1">If a Dose Is Missed</label>
+        <select id="med-missed">
+         <option value="">No instruction</option>
+         <option value="asap">Give it when remembered</option>
+         <option value="skip">Skip it, give next as usual</option>
+         <option value="double">Double the next dose</option>
+         <option value="note">Follow my vet’s note</option>
+        </select>
+        <input type="text" id="med-missed-note" maxlength="300" placeholder="Your vet’s instructions for a missed dose" style="display:none;margin-top:8px;">
+        <p id="med-missed-hint" class="font-body text-xs text-secondary mt-1 italic">Shown on the card, and to your sitter, when a dose is late or missed.</p>
        </div>
        <div>
         <label class="block font-body text-sm text-secondary mb-1">Notes</label>
@@ -2141,7 +2207,9 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     document.getElementById('med-refill-label').textContent = supp ? 'Reorder Date' : 'Refill Date';
     document.getElementById('med-vet-wrap').style.display = supp ? 'none' : '';
     document.getElementById('med-brand-wrap').style.display = supp ? '' : 'none';
+    document.getElementById('med-missed-label').textContent = supp ? 'If a Serving Is Missed' : 'If a Dose Is Missed';
     updateMedFormLabels();
+    if(typeof applyDoseModeUI === 'function') applyDoseModeUI();
   };
 
   function updateMedFormLabels() {
@@ -2168,9 +2236,26 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     const pet = getList('pets').find(p => p.__id === petId);
     let name = document.getElementById('med-name').value;
     if(name === 'Other') name = document.getElementById('med-other').value.trim();
+    const rolling = document.getElementById('med-dose-mode').value === 'rolling';
+    if(rolling) {
+      const ev = document.getElementById('med-dose-every');
+      const h = parseInt(ev.value, 10);
+      if(!(h >= 1 && h <= 72)) {
+        ev.setCustomValidity('Enter how many hours apart, from 1 to 72.');
+        ev.reportValidity();
+        return;
+      }
+    }
+    const missedRule = document.getElementById('med-missed').value;
     const fields = {
       petId, petName: pet ? pet.name : '',
       type,
+      doseTimes: rolling ? readDoseTimes().slice(0, 1) : readDoseTimes(),
+      doseEnd: document.getElementById('med-dose-end').value,
+      doseMode: rolling ? 'rolling' : 'fixed',
+      doseEvery: rolling ? parseInt(document.getElementById('med-dose-every').value, 10) : '',
+      missedRule,
+      missedNote: missedRule === 'note' ? document.getElementById('med-missed-note').value.trim() : '',
       name, dosage: document.getElementById('med-dosage').value,
       frequency: document.getElementById('med-frequency').value,
       start: document.getElementById('med-start').value,
@@ -2184,8 +2269,11 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       const meds = getList('medications');
       const idx = meds.findIndex(m => String(m.__id) === String(editId));
       if(idx >= 0) {
+        const before = doseSig(meds[idx]);
         meds[idx] = Object.assign({}, meds[idx], fields);
         saveList('medications', meds);
+        // New times or timing: start the schedule again from now.
+        if(before !== doseSig(meds[idx])) doseReset(meds[idx].__id);
       }
     } else {
       addItem('medications', fields);
@@ -2215,6 +2303,14 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     document.getElementById('med-vet').value = m.vet || '';
     document.getElementById('med-brand').value = m.brand || '';
     document.getElementById('med-notes').value = m.notes || '';
+    document.getElementById('med-dose-mode').value = medDoseEvery(m) ? 'rolling' : 'fixed';
+    document.getElementById('med-dose-every').value = medDoseEvery(m) || '';
+    renderDoseTimes(medDoseTimes(m));
+    document.getElementById('med-dose-end').value = m.doseEnd || '';
+    document.getElementById('med-missed').value = m.missedRule || '';
+    document.getElementById('med-missed-note').value = m.missedNote || '';
+    applyDoseModeUI();
+    applyMissedUI();
     updateMedFormLabels();
     const banner = document.getElementById('med-edit-banner');
     banner.style.display = 'flex';
@@ -2229,7 +2325,9 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     form.reset();
     document.getElementById('med-other-container').style.display = 'none';
     document.getElementById('med-edit-banner').style.display = 'none';
+    renderDoseTimes([]);
     handleMedType(document.getElementById('med-type').value);
+    applyMissedUI();
     renderMedications();
   };
 
@@ -2250,32 +2348,55 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       : '<span style="background:rgba(91,91,214,0.1);color:#5B5BD6;font-size:13px;font-weight:600;padding:2px 8px;border-radius:12px;">Medication</span>';
     const actionBtn = 'background:transparent;border:1px solid var(--border-color);color:var(--text-primary);padding:5px 12px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;';
     const dangerBtn = 'background:transparent;border:1px solid #e53e3e;color:#e53e3e;padding:5px 10px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;';
+    const every = medDoseEvery(m);
+    const times = medDoseTimes(m);
+    const doseList = every
+      ? `every ${every} hour${every === 1 ? '' : 's'} from the last ${supp ? 'serving' : 'dose'}`
+      : times.map(fmtDoseTime).join(', ');
+    const missed = medMissedText(m);
+    const archived = !!m.archived;
     return `<div class="card p-4" style="${isEditing ? 'box-shadow:0 0 0 2px #5B5BD6;border-color:#5B5BD6;' : ''}">
       <div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <p class="font-heading font-bold text-primary">${esc(m.name)}</p>
           ${badge}
           ${isEditing ? '<span style="background:#5B5BD6;color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;">EDITING</span>' : ''}
+          ${archived ? '<span style="background:#5B5BD6;color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;">ARCHIVED</span>' : ''}
         </div>
         <p class="font-body text-sm text-secondary">${esc(m.petName)}${m.dosage ? ' · ' + esc(m.dosage) : ''}${m.frequency ? ' · ' + esc(m.frequency) : ''}</p>
         ${supp
           ? (m.brand ? `<p class="font-body text-sm text-secondary">Brand: ${esc(m.brand)}</p>` : '')
           : (m.vet ? `<p class="font-body text-sm text-secondary">Prescribed by: ${esc(m.vet)}</p>` : '')}
         ${m.refill ? `<p class="font-body text-sm mt-1" style="${refillUrgency}">${supp ? 'Reorder' : 'Refill'}: ${fmtDate(m.refill)}${daysToRefill < 0 ? ' (overdue)' : ` (${daysToRefill} days)`}</p>` : ''}
+        ${times.length ? `<p class="font-body text-sm text-secondary mt-1">${supp ? 'Servings' : 'Doses'}: ${esc(doseList)}${m.doseEnd ? ` · until ${fmtDate(m.doseEnd)}` : ''}</p>` : ''}
+        ${missed ? `<p class="font-body text-sm text-secondary mt-1">If missed: ${esc(missed)}</p>` : ''}
         ${m.notes ? `<p class="font-body text-xs text-secondary mt-1 italic">${esc(m.notes)}</p>` : ''}
+        ${archived ? '' : doseBoxHTML(m)}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-color);justify-content:flex-end;">
-        <button type="button" onclick="editMed(${m.__id})" style="${actionBtn}">✎ Edit</button>
+        ${archived
+          ? `<button type="button" onclick="restoreMed(${m.__id})" style="${actionBtn}">↺ Restore</button>`
+          : `<button type="button" onclick="editMed(${m.__id})" style="${actionBtn}">✎ Edit</button>
+             <button type="button" onclick="archiveMed(${m.__id})" style="${actionBtn}">Archive</button>`}
         <button type="button" onclick="deleteMed(${m.__id})" style="${dangerBtn}">✕ Delete</button>
       </div>
     </div>`;
   }
 
   function renderMedications() {
-    const all = getList('medications');
+    const everything = getList('medications');
+    const archivedList = everything.filter(m => m.archived);
+    const all = everything.filter(m => !m.archived);
+    if(medFilter === 'archived' && !archivedList.length) medFilter = 'all';
+    renderMedFilter(archivedList.length);
     const el = document.getElementById('medications-list');
     const form = document.getElementById('med-form');
     const editId = form ? form.dataset.editId : '';
+    if(medFilter === 'archived') {
+      el.innerHTML = `<p class="font-body text-xs text-secondary" style="margin-bottom:8px;">Archived items keep their history. They don\u2019t send reminders or appear for your sitter.</p>` +
+        archivedList.map(m => medCardHTML(m, editId)).join('');
+      return;
+    }
     const meds = all.filter(m => medFilter === 'all' || (medIsSupplement(m) ? 'supplement' : 'medication') === medFilter);
     if(!meds.length) {
       const empty = medFilter === 'supplement' ? 'No supplements added yet.'
@@ -2298,6 +2419,42 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
        <div class="space-y-3" style="margin-bottom:18px;">${items.map(m => medCardHTML(m, editId)).join('')}</div>`).join('');
   }
 
+  // Filter chips, with "Archived" only when something is archived.
+  function renderMedFilter(nArchived) {
+    const host = document.getElementById('med-filter');
+    if(!host) return;
+    let btn = host.querySelector('[data-med-filter="archived"]');
+    if(nArchived && !btn) {
+      host.insertAdjacentHTML('beforeend', `<button type="button" class="med-filter-btn" data-med-filter="archived" onclick="setMedFilter('archived')"></button>`);
+      btn = host.querySelector('[data-med-filter="archived"]');
+    }
+    if(btn) {
+      btn.style.display = nArchived ? '' : 'none';
+      btn.textContent = `Archived (${nArchived})`;
+    }
+    host.querySelectorAll('.med-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.medFilter === medFilter));
+  }
+
+  window.archiveMed = id => {
+    const list = getList('medications');
+    const m = list.find(x => String(x.__id) === String(id));
+    if(!m) return;
+    const form = document.getElementById('med-form');
+    if(form && String(form.dataset.editId) === String(id)) cancelMedEdit();
+    m.archived = new Date().toISOString().slice(0, 10);
+    saveList('medications', list);
+    refreshAll();
+  };
+  window.restoreMed = id => {
+    const list = getList('medications');
+    const m = list.find(x => String(x.__id) === String(id));
+    if(!m) return;
+    delete m.archived;
+    saveList('medications', list);
+    doseReset(m.__id);
+    refreshAll();
+  };
+
   window.deleteMed = id => {
     const m = getList('medications').find(x => String(x.__id) === String(id));
     if(!confirm(`Delete this ${medIsSupplement(m) ? 'supplement' : 'medication'}?`)) return;
@@ -2306,6 +2463,283 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     deleteItem('medications', id);
     refreshAll();
   };
+
+  // ============ DOSE TIMES & TRACKING (demo: simulated on this page) ============
+  // The full app keeps the schedule on Pawfolio's server so reminders reach the
+  // phone and a sitter. The demo plays the same rules here and forgets on refresh.
+  const DOSE_TIME_SUGGESTIONS = { 'Once daily': ['08:00'], 'Twice daily': ['08:00', '20:00'], 'Every 8 hours': ['06:00', '14:00', '22:00'] };
+  const EVERY_SUGGESTIONS = { 'Once daily': 24, 'Twice daily': 12, 'Every 8 hours': 8 };
+  const MISSED_TEXT = {
+    asap: 'Give it as soon as you remember.',
+    skip: 'Skip it and give the next one as usual.',
+    double: 'Give a double dose at the next dose time.',
+  };
+  const OPEN_BEFORE_MS = 90 * 60000;   // Given/Skip show from 90 minutes before
+  const GRACE_MS = 90 * 60000;         // a dose counts as missed 90 minutes after
+  const UNDO_MS = 5 * 60000;           // Undo stays for 5 minutes
+
+  function medDoseEvery(m) {
+    if(!m || m.doseMode !== 'rolling') return 0;
+    const h = parseInt(m.doseEvery, 10);
+    return h >= 1 && h <= 72 ? h : 0;
+  }
+  function medDoseTimes(m) {
+    if(!m || !Array.isArray(m.doseTimes)) return [];
+    const out = [];
+    m.doseTimes.forEach(t => { if(typeof t === 'string' && /^\d{2}:\d{2}$/.test(t) && !out.includes(t)) out.push(t); });
+    out.sort();
+    return medDoseEvery(m) ? out.slice(0, 1) : out;
+  }
+  function medMissedText(m) {
+    if(!m || !m.missedRule) return '';
+    if(m.missedRule === 'note') return (m.missedNote || '').trim();
+    return MISSED_TEXT[m.missedRule] || '';
+  }
+  function doseSig(m) { return [medDoseTimes(m).join(','), m.doseEnd || '', medDoseEvery(m) || 'fixed'].join('|'); }
+  function fmtDoseTime(t) {
+    const [h, mm] = t.split(':').map(Number);
+    return new Date(2000, 0, 1, h, mm).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  function clock(d) { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+  function when(d) {
+    const a = new Date(); a.setHours(0,0,0,0);
+    const b = new Date(d); b.setHours(0,0,0,0);
+    const diff = Math.round((b - a) / 86400000);
+    const w = diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : diff === -1 ? 'yesterday'
+      : d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    return w + ' at ' + clock(d);
+  }
+
+  // ---- form ----
+  function doseTimeRowHTML(value) {
+    return `<div class="dose-time-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <input type="time" class="dose-time-input" value="${esc(value || '')}" style="flex:1;min-width:0;">
+      <button type="button" class="btn-secondary dose-time-remove" aria-label="Remove this dose time" style="padding:6px 12px;font-size:15px;width:auto;flex:0 0 auto;">✕</button>
+    </div>`;
+  }
+  function renderDoseTimes(times) {
+    document.getElementById('med-dose-times').innerHTML = (times || []).map(doseTimeRowHTML).join('');
+    updateDoseHint();
+  }
+  function readDoseTimes() {
+    const out = [];
+    document.querySelectorAll('#med-dose-times .dose-time-input').forEach(el => {
+      if(/^\d{2}:\d{2}$/.test(el.value) && !out.includes(el.value)) out.push(el.value);
+    });
+    return out.sort();
+  }
+  function updateDoseHint() {
+    const hint = document.getElementById('med-dose-hint');
+    const n = readDoseTimes().length;
+    const noun = document.getElementById('med-type').value === 'supplement' ? 'serving' : 'dose';
+    if(document.getElementById('med-dose-mode').value === 'rolling') {
+      const h = parseInt(document.getElementById('med-dose-every').value, 10);
+      hint.textContent = !(h >= 1 && h <= 72)
+        ? `Enter how many hours apart each ${noun} should be.`
+        : `Each ${noun} is due ${h} hour${h === 1 ? '' : 's'} after the last one was given.`;
+      return;
+    }
+    hint.textContent = n
+      ? `${n} ${noun} time${n === 1 ? '' : 's'} a day. In your own Pawfolio, you can be reminded at each one.`
+      : `Optional. Add a time for each ${noun} to check it off here.`;
+  }
+  function applyDoseModeUI() {
+    const rolling = document.getElementById('med-dose-mode').value === 'rolling';
+    const supp = document.getElementById('med-type').value === 'supplement';
+    document.getElementById('med-dose-every-row').style.display = rolling ? 'flex' : 'none';
+    document.getElementById('med-dose-label').textContent = rolling
+      ? (supp ? 'First Serving At' : 'First Dose At')
+      : (supp ? 'Serving Times' : 'Dose Times');
+    const host = document.getElementById('med-dose-times');
+    if(rolling) {
+      const first = readDoseTimes()[0];
+      if(host.querySelectorAll('.dose-time-row').length !== 1 || !first) renderDoseTimes([first || '08:00']);
+    }
+    document.getElementById('med-dose-add').style.display = rolling ? 'none' : '';
+    host.classList.toggle('pf-rolling', rolling);
+    updateDoseHint();
+  }
+  function applyMissedUI() {
+    const v = document.getElementById('med-missed').value;
+    document.getElementById('med-missed-note').style.display = v === 'note' ? '' : 'none';
+    document.getElementById('med-missed-hint').textContent = v === 'double'
+      ? 'Only choose this if your vet told you to.'
+      : 'Shown on the card, and to your sitter, when a dose is late or missed.';
+  }
+  document.getElementById('med-dose-add').addEventListener('click', () => {
+    const host = document.getElementById('med-dose-times');
+    host.insertAdjacentHTML('beforeend', doseTimeRowHTML(''));
+    const inputs = host.querySelectorAll('.dose-time-input');
+    if(inputs.length) inputs[inputs.length - 1].focus();
+    updateDoseHint();
+  });
+  document.getElementById('med-dose-times').addEventListener('click', e => {
+    const row = e.target.closest('.dose-time-remove') && e.target.closest('.dose-time-row');
+    if(row) { row.remove(); updateDoseHint(); }
+  });
+  document.getElementById('med-dose-times').addEventListener('change', updateDoseHint);
+  document.getElementById('med-frequency').addEventListener('change', e => {
+    if(document.getElementById('med-dose-mode').value === 'rolling') {
+      const ev = document.getElementById('med-dose-every');
+      if(!ev.value && EVERY_SUGGESTIONS[e.target.value]) ev.value = EVERY_SUGGESTIONS[e.target.value];
+      updateDoseHint();
+      return;
+    }
+    if(readDoseTimes().length) return;
+    const suggested = DOSE_TIME_SUGGESTIONS[e.target.value];
+    if(suggested) renderDoseTimes(suggested.slice());
+  });
+  document.getElementById('med-dose-mode').addEventListener('change', () => {
+    const ev = document.getElementById('med-dose-every');
+    if(document.getElementById('med-dose-mode').value === 'rolling' && !ev.value) {
+      ev.value = EVERY_SUGGESTIONS[document.getElementById('med-frequency').value] || '';
+    }
+    applyDoseModeUI();
+  });
+  document.getElementById('med-dose-every').addEventListener('input', e => { e.target.setCustomValidity(''); updateDoseHint(); });
+  document.getElementById('med-missed').addEventListener('change', applyMissedUI);
+
+  // ---- simulated schedule ----
+  // medId -> { pending: {id, due}, events: [{id, due, status, taken, logged}] } (newest first)
+  const doseState = {};
+  let doseSeq = 1;
+  window.pfDemoDoseState = doseState;
+
+  // Next set clock time strictly after `from`.
+  function nextFixed(m, from) {
+    const times = medDoseTimes(m);
+    if(!times.length) return null;
+    for(let day = 0; day < 3; day++) {
+      for(const t of times) {
+        const [h, mm] = t.split(':').map(Number);
+        const d = new Date(from); d.setDate(d.getDate() + day); d.setHours(h, mm, 0, 0);
+        if(d > from) return d;
+      }
+    }
+    return null;
+  }
+  function nextDue(m, from) {
+    const every = medDoseEvery(m);
+    const d = every ? new Date(from.getTime() + every * 3600000) : nextFixed(m, from);
+    if(d && m.doseEnd && d > new Date(m.doseEnd + 'T23:59:59')) return null;
+    return d;
+  }
+  function queue(m, st, due) { st.pending = due ? { id: doseSeq++, due } : null; }
+  function doseReset(id) { delete doseState[id]; }
+  window.pfDemoDoseReset = doseReset;
+
+  function ensure(m) {
+    if(!medDoseTimes(m).length) return null;
+    let st = doseState[m.__id];
+    if(!st) {
+      st = doseState[m.__id] = { pending: null, events: [] };
+      // First dose: the next set time (rolling: the "first dose at" time).
+      queue(m, st, nextFixed(m, new Date(Date.now() - GRACE_MS)));
+    }
+    // A dose left past its grace time is marked missed and the next one queued.
+    let guard = 0;
+    while(st.pending && Date.now() > st.pending.due.getTime() + GRACE_MS && guard++ < 10) {
+      st.events.unshift({ id: st.pending.id, due: st.pending.due, status: 'missed' });
+      queue(m, st, medDoseEvery(m) ? nextDue(m, new Date()) : nextFixed(m, new Date(Date.now() - GRACE_MS)));
+    }
+    return st;
+  }
+  function medById(id) { return getList('medications').find(x => String(x.__id) === String(id)); }
+
+  function logDose(id, taken) {
+    const m = medById(id); const st = m && ensure(m);
+    if(!st || !st.pending) return;
+    const now = new Date(), p = st.pending;
+    st.events.unshift({ id: p.id, due: p.due, status: taken ? 'taken' : 'skipped', taken: taken ? now : null, logged: now, prevPending: p });
+    // Rolling: the next one is counted from when this one was given.
+    // Set times: the next set time after this dose.
+    queue(m, st, medDoseEvery(m) ? nextDue(m, now) : nextFixed(m, new Date(Math.max(now, p.due))));
+    renderMedications();
+  }
+  window.pfDoseLog = (id, taken) => logDose(id, taken);
+  window.pfDoseEarly = (id) => {
+    const m = medById(id); const st = m && ensure(m);
+    if(!st || !st.pending) return;
+    if(confirm(`Give this dose early?\n\nIt isn\u2019t due until ${when(st.pending.due)}. Only give it early if your vet says that\u2019s okay.`)) logDose(id, true);
+  };
+  window.pfDoseUndo = id => {
+    const st = doseState[id];
+    const e = st && st.events[0];
+    if(!e || !e.logged || Date.now() - e.logged.getTime() > UNDO_MS) return;
+    st.events.shift();
+    st.pending = e.prevPending;
+    renderMedications();
+  };
+
+  function doseBoxHTML(m) {
+    const st = ensure(m);
+    if(!st) return '';
+    const noun = medIsSupplement(m) ? 'serving' : 'dose';
+    const missed = medMissedText(m);
+    const last = st.events[0];
+    let html = '<div class="pf-dose-box">';
+    if(last && last.logged && Date.now() - last.logged.getTime() < UNDO_MS) {
+      html += `<div class="pf-dose-undo"><span>${last.status === 'taken' ? 'Given ' + clock(last.taken) : 'Skipped'}</span>` +
+              `<button type="button" onclick="pfDoseUndo(${m.__id})">Undo</button></div>`;
+    }
+    if(st.pending) {
+      const due = st.pending.due, late = due.getTime() <= Date.now();
+      const open = Date.now() >= due.getTime() - OPEN_BEFORE_MS;
+      if(last && last.status === 'missed') {
+        html += `<p class="pf-dose-missed">The last ${noun} wasn\u2019t recorded (due ${when(last.due)}).${missed ? ' <strong>If missed:</strong> ' + esc(missed) : ''}</p>`;
+      } else if(late && missed) {
+        html += `<p class="pf-dose-missed"><strong>If missed:</strong> ${esc(missed)}</p>`;
+      }
+      html += `<p class="font-body text-sm" style="font-weight:700;${late ? 'color:#b45309;' : 'color:var(--text-primary);'}">` +
+              (late ? `Due now · <span style="white-space:nowrap;">${clock(due)}</span>` : `Next ${noun}: <span style="white-space:nowrap;">${when(due)}</span>`) + '</p>';
+      html += open
+        ? `<div class="pf-dose-btns"><button type="button" class="pf-dose-given" onclick="pfDoseLog(${m.__id}, true)">✓ Given</button>` +
+          `<button type="button" class="pf-dose-skip" onclick="pfDoseLog(${m.__id}, false)">Skip</button></div>`
+        : `<button type="button" class="pf-dose-early" onclick="pfDoseEarly(${m.__id})">Give early</button>`;
+    } else {
+      html += `<p class="font-body text-sm text-secondary">No more ${noun}s scheduled.</p>`;
+    }
+    const lastTaken = st.events.find(e => e.status === 'taken');
+    if(lastTaken) html += `<p class="font-body text-xs text-secondary" style="margin-top:6px;">Last given${lastTaken.by ? ' by ' + esc(lastTaken.by) : ''} ${when(lastTaken.taken)}</p>`;
+    return html + '</div>';
+  }
+
+  // Sample history so the demo opens mid-routine.
+  function seedDoses() {
+    const now = Date.now();
+    getList('medications').forEach(m => {
+      if(m.archived || !medDoseTimes(m).length || !m.demoLastGivenHoursAgo) return;
+      const st = doseState[m.__id] = { pending: null, events: [] };
+      // Set times: given at the most recent set time. Rolling: N hours ago.
+      let taken = new Date(now - m.demoLastGivenHoursAgo * 3600000);
+      if(!medDoseEvery(m)) {
+        const prev = nextFixed(m, new Date(now - 86400000 - 60000));
+        let t = prev;
+        while(t) { const n = nextFixed(m, t); if(!n || n > new Date(now)) break; t = n; }
+        if(t) taken = t;
+      }
+      st.events.push({ id: doseSeq++, due: taken, status: 'taken', taken, by: m.demoGivenBy || '' });
+      queue(m, st, medDoseEvery(m) ? nextDue(m, taken) : nextFixed(m, taken));
+    });
+  }
+  seedDoses();
+
+  // Repaint each minute so the window, Undo and "Due now" stay current.
+  setInterval(() => { if(document.querySelector('#medications-list .pf-dose-box')) renderMedications(); }, 30000);
+
+  // Sitter-sharing preview (Pawfolio Complete; not in the demo).
+  (function(){
+    const bar = document.getElementById('pf-share-bar');
+    const toggle = () => {
+      const body = document.getElementById('pf-share-body');
+      const open = body.style.display === 'none';
+      body.style.display = open ? '' : 'none';
+      bar.setAttribute('aria-expanded', String(open));
+      document.getElementById('pf-share-caret').style.transform = open ? 'rotate(90deg)' : '';
+    };
+    bar.addEventListener('click', toggle);
+    bar.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+  })();
 
   // ============ WEIGHT TRACKER ============
   document.getElementById('weight-form').addEventListener('submit', e => {
@@ -2584,7 +3018,7 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
   // entries deleted from the app are silently skipped.
   function sitterSelectedMeds(petId, data, kind) {
     const sel = (data['sitter-selmeds-'+petId]) || {};
-    const meds = getList('medications').filter(m => m.petId === petId && sitterMedType(m) === kind);
+    const meds = getList('medications').filter(m => m.petId === petId && sitterMedType(m) === kind && !m.archived);
     const out = [];
     meds.forEach(m => {
       const s = sel[m.__id];
@@ -2600,7 +3034,7 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
   // petSitterInfo under 'sitter-selmeds-<petId>', keyed by the entry's __id.
   function sitterMedPickerHTML(p, data, kind) {
     const supp = kind === 'supplement';
-    const meds = getList('medications').filter(m => m.petId === p.__id && sitterMedType(m) === kind);
+    const meds = getList('medications').filter(m => m.petId === p.__id && sitterMedType(m) === kind && !m.archived);
     if(!meds.length) {
       return `<p class="font-body text-xs text-secondary italic">No ${supp ? 'supplements' : 'medications'} in your app for this pet. Add them in the Medications tab to include them here.</p>`;
     }
@@ -2696,7 +3130,7 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
         if(el) data[prefix + p.__id] = el.value;
       });
       // Gather med checkbox selections if this pet's picker is rendered.
-      const meds = getList('medications').filter(m => m.petId === p.__id);
+      const meds = getList('medications').filter(m => m.petId === p.__id && !m.archived);
       const anyChk = meds.length && document.getElementById('sitter-medchk-'+p.__id+'-'+meds[0].__id);
       if(anyChk) {
         const sel = {};
@@ -3016,7 +3450,7 @@ ${(function(){ if (sitterVetIdentityMatchesPrimary(p.vet, p.vetPerson, data['sit
       const days = Math.ceil((new Date(v.next) - now) / 86400000);
       if(days <= 60) reminders.push({ type: 'Vaccination', name: v.name, pet: v.petName, days, date: v.next });
     });
-    getList('medications').filter(m => m.refill).forEach(m => {
+    getList('medications').filter(m => m.refill && !m.archived).forEach(m => {
       const days = Math.ceil((new Date(m.refill) - now) / 86400000);
       if(days <= 30) reminders.push({ type: medIsSupplement(m) ? 'Supplement Reorder' : 'Medication Refill', name: m.name, pet: m.petName, days, date: m.refill });
     });
@@ -5365,7 +5799,7 @@ try {
         var days = Math.ceil((new Date(v.next) - now) / 86400000);
         if(days <= 60) reminders.push({type:'Vaccination', name:v.name, pet:v.petName, days:days, date:v.next, time:'', tab:'vaccinations'});
       });
-      (getList('medications')||[]).filter(function(m){return m.refill;}).forEach(function(m){
+      (getList('medications')||[]).filter(function(m){return m.refill && !m.archived;}).forEach(function(m){
         var days = Math.ceil((new Date(m.refill) - now) / 86400000);
         var medType = (m.type === 'supplement') ? 'Supplement Reorder' : 'Medication Refill';
         if(days <= 30) reminders.push({type:medType, name:m.name, pet:m.petName, days:days, date:m.refill, time:'', tab:'medications'});
