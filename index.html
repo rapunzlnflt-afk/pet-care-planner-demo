@@ -29,7 +29,7 @@
   <link rel="canonical" href="https://cleartrackapps.com/pet-care-planner-demo/">
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.12.0">
+                          <meta name="app-version" content="3.13.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -214,6 +214,21 @@
     .pf-dose-skip { background: transparent; color: var(--text-primary); border: 1px solid var(--border-color); }
     #med-dose-times.pf-rolling .dose-time-remove { display: none; }
     .pf-dose-missed { margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: rgba(180,83,9,0.08); border: 1px solid rgba(180,83,9,0.25); color: #7c2d12; font-family: 'Karla', sans-serif; font-size: 14px; line-height: 1.4; }
+    #pf-dose-sheet { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 10002; display: flex; align-items: flex-end; justify-content: center; }
+    #pf-dose-sheet .pf-dose-card { background: #fff; width: 100%; max-width: 420px; border-radius: 16px 16px 0 0; padding: 22px 20px calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,0.25); }
+    @media (min-width: 640px) { #pf-dose-sheet { align-items: center; } #pf-dose-sheet .pf-dose-card { border-radius: 16px; } }
+    #pf-dose-sheet h2 { font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 700; color: #1f2937; margin: 0; overflow-wrap: anywhere; }
+    #pf-dose-sheet .pf-dose-pet { font-size: 15px; color: #4b5563; margin: 2px 0 0; }
+    #pf-dose-sheet .pf-dose-muted { font-size: 14px; color: #6b7280; margin: 10px 0 0; }
+    #pf-dose-sheet .pf-dose-status { font-size: 16px; font-weight: 700; color: #1f2937; margin: 14px 0 0; }
+    #pf-dose-sheet button { display: block; width: 100%; font-family: 'Karla', sans-serif; cursor: pointer; }
+    #pf-dose-sheet .pf-dose-primary { margin-top: 18px; background: #5B5BD6; color: #fff; border: none; border-radius: 12px; padding: 15px; font-size: 17px; font-weight: 700; }
+    #pf-dose-sheet .pf-dose-secondary { margin-top: 10px; background: #fff; color: #1f2937; border: 1px solid #d1d5db; border-radius: 12px; padding: 12px; font-size: 15px; font-weight: 600; }
+    #pf-dose-sheet .pf-dose-link { margin-top: 6px; background: none; border: none; color: #6b7280; padding: 10px; font-size: 14px; font-weight: 600; }
+    #pf-dose-sheet button:disabled { opacity: 0.6; }
+    #pf-dose-sheet input[type="time"] { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 12px; font-size: 18px; border: 1px solid #d1d5db; border-radius: 12px; background: #fff; color: #1f2937; }
+    #pf-dose-sheet .pf-dose-err { margin: 8px 0 0; font-size: 14px; color: #b91c1c; }
+    #pf-dose-sheet .pf-dose-err:empty { display: none; }
     .pf-dose-early { display: inline-block; margin-top: 6px; background: none; border: none; padding: 4px 0; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700; color: #4338ca; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
     .pf-dose-undo { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #1f2937; color: #fff; border-radius: 8px; padding: 6px 6px 6px 12px; margin-bottom: 8px; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700; }
     .pf-dose-undo button { flex: 0 0 auto; background: none; border: 1px solid rgba(255,255,255,0.5); color: #fff; border-radius: 6px; padding: 5px 14px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
@@ -2477,6 +2492,7 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
   const OPEN_BEFORE_MS = 90 * 60000;   // Given/Skip show from 90 minutes before
   const GRACE_MS = 90 * 60000;         // a dose counts as missed 90 minutes after
   const UNDO_MS = 5 * 60000;           // Undo stays for 5 minutes
+  const CHANGE_MS = 30 * 60000;        // "Change time given" stays for 30 minutes
 
   function medDoseEvery(m) {
     if(!m || m.doseMode !== 'rolling') return 0;
@@ -2657,6 +2673,90 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     renderMedications();
   }
   window.pfDoseLog = (id, taken) => logDose(id, taken);
+
+  // Minutes between doses, as the full app works it out.
+  function gapMin(m) {
+    const every = medDoseEvery(m);
+    if(every) return every * 60;
+    const t = medDoseTimes(m).map(x => { const [h, mm] = x.split(':').map(Number); return h * 60 + mm; });
+    if(t.length < 2) return 1440;
+    let best = 1440;
+    t.forEach((v, i) => { best = Math.min(best, (i + 1 < t.length ? t[i + 1] : t[0] + 1440) - v); });
+    return Math.max(15, best);
+  }
+  // Just after a dose, the next one waits behind a link until half the gap
+  // between doses has passed. Returns the time it opens, or 0.
+  function heldUntil(m, st) {
+    const l = st.events.find(e => e.status === 'taken');
+    if(!l || !l.taken) return 0;
+    const t = l.taken.getTime() + gapMin(m) * 30000;
+    return t > Date.now() ? t : 0;
+  }
+  function agoText(d) {
+    const mins = Math.max(0, Math.round((Date.now() - d.getTime()) / 60000));
+    return mins < 1 ? 'just now' : mins < 60 ? mins + ' minute' + (mins === 1 ? '' : 's') + ' ago' : (Math.round(mins / 6) / 10) + ' hours ago';
+  }
+  window.pfDoseHeld = (id) => {
+    const m = medById(id); const st = m && ensure(m);
+    const l = st && st.events.find(e => e.status === 'taken');
+    if(!st || !st.pending || !l) return;
+    if(confirm(`Give another dose now?\n\nThe last dose was given ${agoText(l.taken)}. Only give another now if your vet says that\u2019s okay.`)) logDose(id, true);
+  };
+
+  // ---- change the time a dose was given (latest dose, 30 minutes) ----
+  function changeable(st) {
+    const e = st && st.events[0];
+    return e && e.status === 'taken' && e.logged && Date.now() - e.logged.getTime() < CHANGE_MS ? e : null;
+  }
+  function hhmm(d) { return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function pickedTime(v) {
+    const x = /^(\d{2}):(\d{2})$/.exec(v || ''); if(!x) return null;
+    const d = new Date(); d.setHours(+x[1], +x[2], 0, 0);
+    if(d.getTime() > Date.now() + 2 * 60000) {
+      d.setDate(d.getDate() - 1);
+      if(d.getTime() < Date.now() - 12 * 3600000) return 'future';
+    }
+    return d;
+  }
+  function closeDoseSheet() { const o = document.getElementById('pf-dose-sheet'); if(o) o.remove(); }
+  window.pfDoseChangeTime = (id) => {
+    const m = medById(id); const st = m && ensure(m); const e = changeable(st);
+    if(!e) { renderMedications(); return; }
+    const rolling = !!medDoseEvery(m);
+    closeDoseSheet();
+    const ov = document.createElement('div');
+    ov.id = 'pf-dose-sheet';
+    ov.innerHTML = '<div class="pf-dose-card" role="dialog" aria-modal="true" aria-labelledby="pf-dose-title">' +
+      '<h2 id="pf-dose-title">Change time given</h2>' +
+      '<p class="pf-dose-pet">' + esc(m.name || 'Medication') + (m.petName ? ' \u00b7 ' + esc(m.petName) : '') + '</p>' +
+      '<p class="pf-dose-muted">Recorded as given ' + when(e.taken) + '. When was it actually given?</p>' +
+      '<label for="pf-dose-time" class="pf-dose-muted" style="display:block;font-weight:700;color:#1f2937;">Time given</label>' +
+      '<input type="time" id="pf-dose-time" value="' + hhmm(e.taken) + '">' +
+      (rolling ? '<p class="pf-dose-muted">The next dose moves to match.</p>' : '') +
+      '<p class="pf-dose-err" id="pf-dose-time-err" role="alert"></p>' +
+      '<button type="button" class="pf-dose-primary" id="pf-dose-time-save">Save time</button>' +
+      '<button type="button" class="pf-dose-link" id="pf-dose-time-cancel">Cancel</button></div>';
+    ov.addEventListener('click', ev => { if(ev.target === ov) closeDoseSheet(); });
+    document.body.appendChild(ov);
+    const err = ov.querySelector('#pf-dose-time-err');
+    ov.querySelector('#pf-dose-time').addEventListener('input', () => { err.textContent = ''; });
+    ov.querySelector('#pf-dose-time-cancel').onclick = closeDoseSheet;
+    ov.querySelector('#pf-dose-time-save').onclick = () => {
+      const at = pickedTime(ov.querySelector('#pf-dose-time').value);
+      if(!at) { err.textContent = 'Enter the time it was given.'; return; }
+      if(at === 'future') { err.textContent = 'That time hasn\u2019t happened yet.'; return; }
+      if(!changeable(st)) { err.textContent = 'It\u2019s too late to change this one. Times can be changed for 30 minutes after tapping Given.'; return; }
+      if(at.getTime() < Date.now() - 12 * 3600000) { err.textContent = 'That\u2019s more than 12 hours ago.'; return; }
+      const prev = st.events.slice(1).find(x => x.status === 'taken');
+      if(prev && at <= prev.taken) { err.textContent = 'That\u2019s before the previous dose (' + when(prev.taken) + ').'; return; }
+      e.taken = at;
+      // Work out the next dose again, as recording it would have.
+      const next = rolling ? nextDue(m, at) : nextFixed(m, new Date(Math.max(at, e.due)));
+      if(!st.pending || !next || st.pending.due.getTime() !== next.getTime()) queue(m, st, next);
+      closeDoseSheet();
+      renderMedications();
+    };
+  };
   window.pfDoseEarly = (id) => {
     const m = medById(id); const st = m && ensure(m);
     if(!st || !st.pending) return;
@@ -2683,8 +2783,10 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
               `<button type="button" onclick="pfDoseUndo(${m.__id})">Undo</button></div>`;
     }
     if(st.pending) {
-      const due = st.pending.due, late = due.getTime() <= Date.now();
-      const open = Date.now() >= due.getTime() - OPEN_BEFORE_MS;
+      const due = st.pending.due, hold = heldUntil(m, st);
+      // Just after a dose, the next one waits behind a link, not a button.
+      const late = !hold && due.getTime() <= Date.now();
+      const open = !hold && Date.now() >= due.getTime() - OPEN_BEFORE_MS;
       if(last && last.status === 'missed') {
         html += `<p class="pf-dose-missed">The last ${noun} wasn\u2019t recorded (due ${when(last.due)}).${missed ? ' <strong>If missed:</strong> ' + esc(missed) : ''}</p>`;
       } else if(late && missed) {
@@ -2695,12 +2797,15 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       html += open
         ? `<div class="pf-dose-btns"><button type="button" class="pf-dose-given" onclick="pfDoseLog(${m.__id}, true)">✓ Given</button>` +
           `<button type="button" class="pf-dose-skip" onclick="pfDoseLog(${m.__id}, false)">Skip</button></div>`
-        : `<button type="button" class="pf-dose-early" onclick="pfDoseEarly(${m.__id})">Give early</button>`;
+        : hold
+          ? `<button type="button" class="pf-dose-early" onclick="pfDoseHeld(${m.__id})">${due.getTime() <= Date.now() ? 'Give now' : 'Give early'}</button>`
+          : `<button type="button" class="pf-dose-early" onclick="pfDoseEarly(${m.__id})">Give early</button>`;
     } else {
       html += `<p class="font-body text-sm text-secondary">No more ${noun}s scheduled.</p>`;
     }
     const lastTaken = st.events.find(e => e.status === 'taken');
     if(lastTaken) html += `<p class="font-body text-xs text-secondary" style="margin-top:6px;">Last given${lastTaken.by ? ' by ' + esc(lastTaken.by) : ''} ${when(lastTaken.taken)}</p>`;
+    if(changeable(st)) html += `<button type="button" class="pf-dose-early" style="display:block;" onclick="pfDoseChangeTime(${m.__id})">Change time given</button>`;
     return html + '</div>';
   }
 
