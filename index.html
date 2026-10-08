@@ -1751,6 +1751,33 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     data[type] = list;
     return saveData(data);
   }
+  // Demo v3.13.1 (app v3.34.2): a pet insurance policy renews each year on the same date. Once
+  // the renewal day has passed, move it to that date next year, so the
+  // profile, the form and Upcoming all show the next renewal. Feb 29 becomes
+  // Feb 28 in other years. Saves only when something moved.
+  function nextRenewal(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return null;
+    var t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    var y = +m[1], mo = +m[2] - 1, d = +m[3], out = null, guard = 0;
+    do {
+      var last = new Date(y, mo + 1, 0).getDate();
+      out = new Date(y, mo, Math.min(d, last));
+      y++;
+    } while (out < t0 && guard++ < 100);
+    if (out < t0) return null;
+    return out.getFullYear() + '-' + ('0' + (out.getMonth() + 1)).slice(-2) + '-' + ('0' + out.getDate()).slice(-2);
+  }
+  function rollInsuranceRenewals() {
+    var pets = getList('pets'), moved = false;
+    pets.forEach(function (p) {
+      if (!p || !p.insRenewal || p.archived) return;
+      var n = nextRenewal(p.insRenewal);
+      if (n && n !== p.insRenewal) { p.insRenewal = n; moved = true; }
+    });
+    if (moved) saveList('pets', pets);
+    return moved;
+  }
+  window.pfRollInsRenewals = rollInsuranceRenewals;
   function addItem(type, item) {
     item.__id = Date.now();
     const list = getList(type);
@@ -3560,6 +3587,7 @@ ${(function(){ if (sitterVetIdentityMatchesPrimary(p.vet, p.vetPerson, data['sit
       if(days <= 30) reminders.push({ type: medIsSupplement(m) ? 'Supplement Reorder' : 'Medication Refill', name: m.name, pet: m.petName, days, date: m.refill });
     });
     // Pet insurance renewals (v3.8.0)
+    try { rollInsuranceRenewals(); } catch(e){}
     getList('pets').filter(p => p.insRenewal && !p.archived).forEach(p => {
       const t0 = new Date(); t0.setHours(0,0,0,0);
       const days = Math.round((new Date(p.insRenewal + 'T00:00:00') - t0) / 86400000);
@@ -3592,6 +3620,7 @@ ${(function(){ if (sitterVetIdentityMatchesPrimary(p.vet, p.vetPerson, data['sit
 
   // ============ REFRESH ALL ============
   function refreshAll() {
+    try { rollInsuranceRenewals(); } catch(e){}
     refreshPetDropdowns();
     renderPets();
     renderVetVisits();
@@ -5910,6 +5939,7 @@ try {
         var medType = (m.type === 'supplement') ? 'Supplement Reorder' : 'Medication Refill';
         if(days <= 30) reminders.push({type:medType, name:m.name, pet:m.petName, days:days, date:m.refill, time:'', tab:'medications'});
       });
+      try { if(typeof window.pfRollInsRenewals === 'function') window.pfRollInsRenewals(); } catch(e){}
       (getList('pets')||[]).filter(function(p){return p.insRenewal && !p.archived;}).forEach(function(p){
         var t0 = new Date(); t0.setHours(0,0,0,0);
         var days = Math.round((new Date(p.insRenewal + 'T00:00:00') - t0) / 86400000);
