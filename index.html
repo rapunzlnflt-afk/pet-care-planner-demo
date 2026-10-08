@@ -29,7 +29,7 @@
   <link rel="canonical" href="https://cleartrackapps.com/pet-care-planner-demo/">
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.13.1">
+                          <meta name="app-version" content="3.14.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -2380,6 +2380,13 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     renderMedications();
   };
 
+  // Cards whose Details are open; kept across re-renders (mirrors the app, v3.35.0).
+  const medDetailsOpen = new Set();
+  window.toggleMedDetails = id => {
+    const k = String(id);
+    if(medDetailsOpen.has(k)) medDetailsOpen.delete(k); else medDetailsOpen.add(k);
+    renderMedications();
+  };
   function medCardHTML(m, editId) {
     const supp = medIsSupplement(m);
     const daysToRefill = m.refill ? Math.ceil((new Date(m.refill) - new Date()) / 86400000) : null;
@@ -2397,30 +2404,39 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       : times.map(fmtDoseTime).join(', ');
     const missed = medMissedText(m);
     const archived = !!m.archived;
+    const refillSoon = daysToRefill !== null && daysToRefill < 7;
+    const refillLine = m.refill ? `<p class="font-body text-sm mt-1" style="${refillUrgency}">${supp ? 'Reorder' : 'Refill'}: ${fmtDate(m.refill)}${daysToRefill < 0 ? ' (overdue)' : ` (${daysToRefill} days)`}</p>` : '';
+    const open = !!isEditing || medDetailsOpen.has(String(m.__id));
+    const moreBtn = 'display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 0;background:none;border:none;color:#5B5BD6;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;';
+    const chev = `<span aria-hidden="true" style="width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:${open ? 'rotate(-135deg) translate(-2px,-2px)' : 'rotate(45deg) translate(-2px,-2px)'};"></span>`;
     return `<div class="card p-4" style="${isEditing ? 'box-shadow:0 0 0 2px #5B5BD6;border-color:#5B5BD6;' : ''}">
       <div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <p class="font-heading font-bold text-primary">${esc(m.name)}</p>
-          ${badge}
+          ${archived ? badge : ''}
           ${isEditing ? '<span style="background:#5B5BD6;color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;">EDITING</span>' : ''}
           ${archived ? '<span style="background:#5B5BD6;color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;">ARCHIVED</span>' : ''}
         </div>
         <p class="font-body text-sm text-secondary">${esc(m.petName)}${m.dosage ? ' · ' + esc(m.dosage) : ''}${m.frequency ? ' · ' + esc(m.frequency) : ''}</p>
-        ${supp
-          ? (m.brand ? `<p class="font-body text-sm text-secondary">Brand: ${esc(m.brand)}</p>` : '')
-          : (m.vet ? `<p class="font-body text-sm text-secondary">Prescribed by: ${esc(m.vet)}</p>` : '')}
-        ${m.refill ? `<p class="font-body text-sm mt-1" style="${refillUrgency}">${supp ? 'Reorder' : 'Refill'}: ${fmtDate(m.refill)}${daysToRefill < 0 ? ' (overdue)' : ` (${daysToRefill} days)`}</p>` : ''}
-        ${times.length ? `<p class="font-body text-sm text-secondary mt-1">${supp ? 'Servings' : 'Doses'}: ${esc(doseList)}${m.doseEnd ? ` · until ${fmtDate(m.doseEnd)}` : ''}</p>` : ''}
-        ${missed ? `<p class="font-body text-sm text-secondary mt-1">If missed: ${esc(missed)}</p>` : ''}
-        ${m.notes ? `<p class="font-body text-xs text-secondary mt-1 italic">${esc(m.notes)}</p>` : ''}
+        ${refillLine && refillSoon ? refillLine : ''}
         ${archived ? '' : doseBoxHTML(m)}
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-color);justify-content:flex-end;">
-        ${archived
-          ? `<button type="button" onclick="restoreMed(${m.__id})" style="${actionBtn}">↺ Restore</button>`
-          : `<button type="button" onclick="editMed(${m.__id})" style="${actionBtn}">✎ Edit</button>
-             <button type="button" onclick="archiveMed(${m.__id})" style="${actionBtn}">Archive</button>`}
-        <button type="button" onclick="deleteMed(${m.__id})" style="${dangerBtn}">✕ Delete</button>
+      <button type="button" class="pf-med-more" aria-expanded="${open}" onclick="toggleMedDetails(${m.__id})" style="${moreBtn}">${open ? 'Hide details' : 'Details'}${chev}</button>
+      <div class="pf-med-details" style="margin-top:4px;"${open ? '' : ' hidden'}>
+        ${times.length ? `<p class="font-body text-sm text-secondary">${supp ? 'Servings' : 'Doses'}: ${esc(doseList)}${m.doseEnd ? ` · until ${fmtDate(m.doseEnd)}` : ''}</p>` : ''}
+        ${missed ? `<p class="font-body text-sm text-secondary mt-1">If missed: ${esc(missed)}</p>` : ''}
+        ${supp
+          ? (m.brand ? `<p class="font-body text-sm text-secondary mt-1">Brand: ${esc(m.brand)}</p>` : '')
+          : (m.vet ? `<p class="font-body text-sm text-secondary mt-1">Prescribed by: ${esc(m.vet)}</p>` : '')}
+        ${refillLine && !refillSoon ? refillLine : ''}
+        ${m.notes ? `<p class="font-body text-xs text-secondary mt-1 italic">${esc(m.notes)}</p>` : ''}
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color);justify-content:flex-end;">
+          ${archived
+            ? `<button type="button" onclick="restoreMed(${m.__id})" style="${actionBtn}">↺ Restore</button>`
+            : `<button type="button" onclick="editMed(${m.__id})" style="${actionBtn}">✎ Edit</button>
+               <button type="button" onclick="archiveMed(${m.__id})" style="${actionBtn}">Archive</button>`}
+          <button type="button" onclick="deleteMed(${m.__id})" style="${dangerBtn}">✕ Delete</button>
+        </div>
       </div>
     </div>`;
   }
