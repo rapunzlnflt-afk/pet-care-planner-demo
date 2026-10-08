@@ -29,7 +29,7 @@
   <link rel="canonical" href="https://cleartrackapps.com/pet-care-planner-demo/">
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.13.0">
+                          <meta name="app-version" content="3.13.1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -3561,8 +3561,9 @@ ${(function(){ if (sitterVetIdentityMatchesPrimary(p.vet, p.vetPerson, data['sit
     });
     // Pet insurance renewals (v3.8.0)
     getList('pets').filter(p => p.insRenewal && !p.archived).forEach(p => {
-      const days = Math.ceil((new Date(p.insRenewal) - now) / 86400000);
-      if(days >= -7 && days <= 60) reminders.push({ type: 'Insurance Renewal', name: p.insurance ? p.insurance + ' policy' : 'Policy renewal', pet: p.name, days, date: p.insRenewal });
+      const t0 = new Date(); t0.setHours(0,0,0,0);
+      const days = Math.round((new Date(p.insRenewal + 'T00:00:00') - t0) / 86400000);
+      if(days >= 0 && days <= 60) reminders.push({ type: 'Insurance Renewal', name: p.insurance ? p.insurance + ' policy' : 'Policy renewal', pet: p.name, days, date: p.insRenewal });
     });
     getList('vet-visits').map(v => ({...v, next: v.next || v.date})).filter(v => v.next).forEach(v => {
       const days = Math.ceil((new Date(v.next) - now) / 86400000);
@@ -5910,8 +5911,9 @@ try {
         if(days <= 30) reminders.push({type:medType, name:m.name, pet:m.petName, days:days, date:m.refill, time:'', tab:'medications'});
       });
       (getList('pets')||[]).filter(function(p){return p.insRenewal && !p.archived;}).forEach(function(p){
-        var days = Math.ceil((new Date(p.insRenewal) - now) / 86400000);
-        if(days >= -7 && days <= 60) reminders.push({type:'Insurance Renewal', name: p.insurance ? p.insurance + ' policy' : 'Policy renewal', pet:p.name, days:days, date:p.insRenewal, time:'', tab:'pet-profiles'});
+        var t0 = new Date(); t0.setHours(0,0,0,0);
+        var days = Math.round((new Date(p.insRenewal + 'T00:00:00') - t0) / 86400000);
+        if(days >= 0 && days <= 60) reminders.push({type:'Insurance Renewal', name: p.insurance ? p.insurance + ' policy' : 'Policy renewal', pet:p.name, days:days, date:p.insRenewal, time:'', tab:'pet-profiles'});
       });
       (getList('vet-visits')||[]).forEach(function(v){
         // Choose appointment date+time (v.date/v.time) OR follow-up date+time (v.next/v.nextTime)
