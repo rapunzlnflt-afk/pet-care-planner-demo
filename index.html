@@ -395,7 +395,12 @@
  .stat-icon { width: 36px; height: 36px; font-size: 20px; }
   .stat-label { font-size: 12px; }
 }
-  </style>
+      #pf-med-stack { padding:0 !important; overflow:hidden; }
+    #pf-med-stack > .card { margin:0 !important; border:none !important; border-radius:0 !important; box-shadow:none !important; padding:11px 14px !important; }
+    #pf-med-stack > .card + .card { border-top:1px solid var(--border-color) !important; }
+    #pf-med-stack .font-heading.text-sm, #pf-med-stack #med-form-title { font-size:16px !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    #pf-med-stack .pf-collapse-chev { font-size:16px !important; color:#64748b; }
+</style>
  <style id="pf-date-time-fit">
 /* v3.10.9 - iOS Safari gives date/time inputs an intrinsic width that ignores the
    form's width, so the boxes ran off the right edge of the card on iPhone. */
@@ -1149,6 +1154,8 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     <!-- MEDICATIONS TAB -->
     <section id="tab-medications" class="tab-content">
      <h2 class="font-heading text-2xl font-bold text-primary mb-4">Medications</h2>
+     <!-- Mirrors app v3.35.0: sitter sharing and the add form share one compact card. -->
+     <div id="pf-med-stack" class="card mb-5">
      <div id="pf-dose-share" class="card mb-5" style="padding:8px 12px;border-left:3px solid #5B5BD6;">
       <div id="pf-share-bar" role="button" tabindex="0" aria-expanded="false" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
        <div class="font-heading text-sm font-bold text-primary" style="flex:1;min-width:0;line-height:1.2;">Share doses with a sitter</div>
@@ -1160,7 +1167,7 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
        <p class="font-body text-xs text-secondary" style="margin-top:8px;">Not available in the demo.</p>
       </div>
      </div>
-     <div class="card p-5 mb-5" style="border-top:4px solid var(--accent-color);">
+     <div id="pf-med-add" class="card p-5 mb-5" style="border-top:4px solid var(--accent-color);">
       <h3 id="med-form-title" class="font-heading text-base font-bold text-primary mb-4">Add a Medication</h3>
       <div id="med-edit-banner" style="display:none;background:linear-gradient(135deg,rgba(91,91,214,0.12),rgba(91,91,214,0.04));border:1px solid #5B5BD6;border-radius:8px;padding:10px 14px;margin:0 0 14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
@@ -1316,6 +1323,7 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
        <button type="submit" id="med-submit-btn" class="btn-primary px-4 py-2">Save Medication</button>
       </form>
      </div>
+     </div><!-- /#pf-med-stack -->
      <div id="med-filter" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
       <button type="button" class="med-filter-btn active" data-med-filter="all" onclick="setMedFilter('all')">All</button>
       <button type="button" class="med-filter-btn" data-med-filter="medication" onclick="setMedFilter('medication')">Medications</button>
