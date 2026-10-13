@@ -29,7 +29,7 @@
   <link rel="canonical" href="https://cleartrackapps.com/pet-care-planner-demo/">
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.14.0">
+                          <meta name="app-version" content="3.15.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -229,6 +229,15 @@
     #pf-dose-sheet input[type="time"] { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 12px; font-size: 18px; border: 1px solid #d1d5db; border-radius: 12px; background: #fff; color: #1f2937; }
     #pf-dose-sheet .pf-dose-err { margin: 8px 0 0; font-size: 14px; color: #b91c1c; }
     #pf-dose-sheet .pf-dose-err:empty { display: none; }
+    /* v3.15.0 (mirrors app v3.36.0): doses-due popup and Refilled sheet */
+    #pf-dose-sheet .pf-due-card { max-height: 88vh; overflow-y: auto; }
+    #pf-dose-sheet .pf-due-row { margin-top: 14px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; }
+    #pf-dose-sheet .pf-due-name { font-size: 17px; font-weight: 700; color: #1f2937; margin: 0; overflow-wrap: anywhere; }
+    #pf-dose-sheet .pf-dose-btns button { width: auto; flex: 1 1 0; }
+    #pf-dose-sheet .pf-dose-skip { color: #1f2937; border-color: #d1d5db; background: #fff; }
+    #pf-dose-sheet .pf-due-row .pf-dose-status { font-size: 15px; }
+    #pf-dose-sheet .pf-due-other { width: auto; margin-top: 8px; background: none; border: none; padding: 4px 0; font-size: 14px; font-weight: 700; color: #4338ca; text-decoration: underline; text-underline-offset: 3px; }
+    #pf-dose-sheet input[type="date"] { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 12px; font-size: 18px; border: 1px solid #d1d5db; border-radius: 12px; background: #fff; color: #1f2937; }
     .pf-dose-early { display: inline-block; margin-top: 6px; background: none; border: none; padding: 4px 0; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700; color: #4338ca; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
     .pf-dose-undo { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #1f2937; color: #fff; border-radius: 8px; padding: 6px 6px 6px 12px; margin-bottom: 8px; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700; }
     .pf-dose-undo button { flex: 0 0 auto; background: none; border: 1px solid rgba(255,255,255,0.5); color: #fff; border-radius: 6px; padding: 5px 14px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
@@ -2414,6 +2423,10 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     const archived = !!m.archived;
     const refillSoon = daysToRefill !== null && daysToRefill < 7;
     const refillLine = m.refill ? `<p class="font-body text-sm mt-1" style="${refillUrgency}">${supp ? 'Reorder' : 'Refill'}: ${fmtDate(m.refill)}${daysToRefill < 0 ? ' (overdue)' : ` (${daysToRefill} days)`}</p>` : '';
+    // Mirrors app v3.36.0: "Refilled" records it and sets the next date.
+    const refillBtn = !archived && refillSoon
+      ? `<button type="button" class="pf-dose-early" style="display:block;margin-top:2px;" onclick="markRefilled(${m.__id})">${supp ? '✓ Reordered — set next date' : '✓ Refilled — set next date'}</button>`
+      : '';
     const open = !!isEditing || medDetailsOpen.has(String(m.__id));
     const moreBtn = 'display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 0;background:none;border:none;color:#5B5BD6;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;';
     const chev = `<span aria-hidden="true" style="width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:${open ? 'rotate(-135deg) translate(-2px,-2px)' : 'rotate(45deg) translate(-2px,-2px)'};"></span>`;
@@ -2426,7 +2439,7 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
           ${archived ? '<span style="background:#5B5BD6;color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;">ARCHIVED</span>' : ''}
         </div>
         <p class="font-body text-sm text-secondary">${esc(m.petName)}${m.dosage ? ' · ' + esc(m.dosage) : ''}${m.frequency ? ' · ' + esc(m.frequency) : ''}</p>
-        ${refillLine && refillSoon ? refillLine : ''}
+        ${refillLine && refillSoon ? refillLine + refillBtn : ''}
         ${archived ? '' : doseBoxHTML(m)}
       </div>
       <button type="button" class="pf-med-more" aria-expanded="${open}" onclick="toggleMedDetails(${m.__id})" style="${moreBtn}">${open ? 'Hide details' : 'Details'}${chev}</button>
@@ -2452,7 +2465,10 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
   function renderMedications() {
     const everything = getList('medications');
     const archivedList = everything.filter(m => m.archived);
-    const all = everything.filter(m => !m.archived);
+    // Mirrors app v3.36.0: the medication due next comes first.
+    const nextAt = m => { const st = ensure(m); return st && st.pending ? st.pending.due.getTime() : Infinity; };
+    const all = everything.filter(m => !m.archived).map((m, i) => ({ m, i, t: nextAt(m) }))
+      .sort((a, b) => (a.t - b.t) || (a.i - b.i)).map(x => x.m);
     if(medFilter === 'archived' && !archivedList.length) medFilter = 'all';
     renderMedFilter(archivedList.length);
     const el = document.getElementById('medications-list');
@@ -2603,7 +2619,7 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       const h = parseInt(document.getElementById('med-dose-every').value, 10);
       hint.textContent = !(h >= 1 && h <= 72)
         ? `Enter how many hours apart each ${noun} should be.`
-        : `Each ${noun} is due ${h} hour${h === 1 ? '' : 's'} after the last one was given.`;
+        : `Each ${noun} is due ${h} hour${h === 1 ? '' : 's'} after the last one was given. Already gave the first one today? Enter that time, then record it on the card.`;
       return;
     }
     hint.textContent = n
@@ -2700,8 +2716,17 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     let st = doseState[m.__id];
     if(!st) {
       st = doseState[m.__id] = { pending: null, events: [] };
-      // First dose: the next set time (rolling: the "first dose at" time).
-      queue(m, st, nextFixed(m, new Date(Date.now() - GRACE_MS)));
+      // First dose: the next set time. Rolling (mirrors app v3.36.0): the
+      // "first dose at" time today while it's less than N hours ago, so a
+      // 2:00 AM first dose set up at 2:30 AM is due now, not tomorrow.
+      const every = medDoseEvery(m);
+      let first = null;
+      if(every) {
+        const [fh, fm] = medDoseTimes(m)[0].split(':').map(Number);
+        const c = new Date(); c.setHours(fh, fm, 0, 0);
+        if(c <= new Date() && Date.now() - c.getTime() < every * 3600000) first = c;
+      }
+      queue(m, st, first || nextFixed(m, new Date(Date.now() - GRACE_MS)));
     }
     // A dose left past its grace time is marked missed and the next one queued.
     let guard = 0;
@@ -2713,14 +2738,14 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
   }
   function medById(id) { return getList('medications').find(x => String(x.__id) === String(id)); }
 
-  function logDose(id, taken) {
+  function logDose(id, taken, at) {
     const m = medById(id); const st = m && ensure(m);
     if(!st || !st.pending) return;
-    const now = new Date(), p = st.pending;
-    st.events.unshift({ id: p.id, due: p.due, status: taken ? 'taken' : 'skipped', taken: taken ? now : null, logged: now, prevPending: p });
+    const now = new Date(), p = st.pending, t = at || now;
+    st.events.unshift({ id: p.id, due: p.due, status: taken ? 'taken' : 'skipped', taken: taken ? t : null, logged: now, prevPending: p });
     // Rolling: the next one is counted from when this one was given.
     // Set times: the next set time after this dose.
-    queue(m, st, medDoseEvery(m) ? nextDue(m, now) : nextFixed(m, new Date(Math.max(now, p.due))));
+    queue(m, st, medDoseEvery(m) ? nextDue(m, t) : nextFixed(m, new Date(Math.max(t, p.due))));
     renderMedications();
   }
   window.pfDoseLog = (id, taken) => logDose(id, taken);
@@ -2817,10 +2842,172 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     const st = doseState[id];
     const e = st && st.events[0];
     if(!e || !e.logged || Date.now() - e.logged.getTime() > UNDO_MS) return;
+    if(e.recordedLate) {
+      // A missed dose recorded later goes back to missed.
+      e.status = 'missed'; e.taken = null; e.logged = null; e.recordedLate = false;
+      st.pending = e.prevPending;
+      renderMedications();
+      return;
+    }
     st.events.shift();
     st.pending = e.prevPending;
     renderMedications();
   };
+
+  // ---- mirrors app v3.36.0: record a dose with the time it was given ----
+  const LATE_MS = 24 * 3600000;   // a missed dose can be recorded for 24 hours
+  function recordableMissed(st) {
+    const e = st && st.events[0];
+    return e && e.status === 'missed' && Date.now() - e.due.getTime() < LATE_MS ? e : null;
+  }
+  function recordBtn(m) {
+    return `<button type="button" class="pf-dose-early" style="display:block;margin-top:0;" onclick="pfDoseRecordMissed(${m.__id})">It was given \u2014 record the time</button>`;
+  }
+  function pickedPast(v) {
+    const x = /^(\d{2}):(\d{2})$/.exec(v || ''); if(!x) return null;
+    const d = new Date(); d.setHours(+x[1], +x[2], 0, 0);
+    if(d.getTime() > Date.now() + 2 * 60000) d.setDate(d.getDate() - 1);
+    return d;
+  }
+  function openSheet(inner, cls) {
+    closeDoseSheet();
+    const ov = document.createElement('div');
+    ov.id = 'pf-dose-sheet';
+    ov.innerHTML = `<div class="pf-dose-card${cls ? ' ' + cls : ''}" role="dialog" aria-modal="true" aria-labelledby="pf-dose-title">${inner}</div>`;
+    ov.addEventListener('click', ev => { if(ev.target === ov) closeDoseSheet(); });
+    document.body.appendChild(ov);
+    ov.querySelectorAll('[data-close]').forEach(b => { b.onclick = closeDoseSheet; });
+    return ov;
+  }
+  // Shared by "Given at a different time" (a due dose) and "record a missed dose".
+  function timeSheet(m, title, intro, defaultAt, rolling, onSave) {
+    const ov = openSheet(
+      `<h2 id="pf-dose-title">${title}</h2>` +
+      `<p class="pf-dose-pet">${esc(m.name || 'Medication')}${m.petName ? ' \u00b7 ' + esc(m.petName) : ''}</p>` +
+      `<p class="pf-dose-muted">${intro}</p>` +
+      '<label for="pf-dose-time" class="pf-dose-muted" style="display:block;font-weight:700;color:#1f2937;">Time given</label>' +
+      `<input type="time" id="pf-dose-time" value="${hhmm(defaultAt)}">` +
+      (rolling ? '<p class="pf-dose-muted">The next dose is counted from this time.</p>' : '') +
+      '<p class="pf-dose-err" id="pf-dose-time-err" role="alert"></p>' +
+      '<button type="button" class="pf-dose-primary" id="pf-dose-time-save">Record as given</button>' +
+      '<button type="button" class="pf-dose-link" data-close>Cancel</button>');
+    const err = ov.querySelector('#pf-dose-time-err');
+    ov.querySelector('#pf-dose-time').addEventListener('input', () => { err.textContent = ''; });
+    ov.querySelector('#pf-dose-time-save').onclick = () => {
+      const at = pickedPast(ov.querySelector('#pf-dose-time').value);
+      if(!at) { err.textContent = 'Enter the time it was given.'; return; }
+      const msg = onSave(at);
+      if(msg) { err.textContent = msg; return; }
+      closeDoseSheet();
+      renderMedications();
+    };
+  }
+  function tooSoon(m, st, at, skip) {
+    const prev = st.events.find(x => x !== skip && x.status === 'taken');
+    if(prev && at <= prev.taken) return 'That\u2019s before the previous dose (' + when(prev.taken) + ').';
+    if(prev && at - prev.taken < gapMin(m) * 30000 && !confirm(`That\u2019s only ${agoText(new Date(Date.now() - (at - prev.taken))).replace(' ago', '')} after the previous dose (${when(prev.taken)}). Record it as given anyway?`)) return 'Not recorded.';
+    return '';
+  }
+  window.pfDoseGivenAt = id => {
+    const m = medById(id); const st = m && ensure(m);
+    if(!st || !st.pending) return;
+    const due = st.pending.due;
+    timeSheet(m, 'When was it given?', `Due ${when(due)}.`, due <= new Date() ? due : new Date(), !!medDoseEvery(m), at => {
+      if(at.getTime() < Date.now() - 12 * 3600000) return 'That\u2019s more than 12 hours ago.';
+      const bad = tooSoon(m, st, at, null); if(bad) return bad;
+      logDose(id, true, at);
+      return '';
+    });
+  };
+  window.pfDoseRecordMissed = id => {
+    const m = medById(id); const st = m && ensure(m); const e = recordableMissed(st);
+    if(!e) { renderMedications(); return; }
+    timeSheet(m, 'Record a missed dose', `Due ${when(e.due)} and not recorded. If it was given, when?`, e.due, !!medDoseEvery(m), at => {
+      if(at.getTime() < e.due.getTime() - OPEN_BEFORE_MS) return 'That\u2019s well before this dose was due (' + when(e.due) + ').';
+      if(at.getTime() < Date.now() - LATE_MS) return 'That\u2019s more than 24 hours ago.';
+      const bad = tooSoon(m, st, at, e); if(bad) return bad;
+      e.status = 'taken'; e.taken = at; e.logged = new Date(); e.recordedLate = true; e.prevPending = st.pending;
+      // Rolling: the next dose moves to match, if that's still ahead.
+      if(medDoseEvery(m)) { const n = nextDue(m, at); if(n && n > new Date()) queue(m, st, n); }
+      return '';
+    });
+  };
+
+  // ---- mirrors app v3.36.0: Refilled / Reordered ----
+  function localISO(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function isoDays(a, b) { return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000); }
+  window.markRefilled = id => {
+    const list = getList('medications');
+    const m = list.find(x => String(x.__id) === String(id));
+    if(!m) return;
+    const supp = medIsSupplement(m), today = localISO(new Date());
+    let known = m.refillEvery >= 1 && m.refillEvery <= 366 ? m.refillEvery : 0;
+    if(!known && m.refillLast && m.refill) { const d = isoDays(m.refillLast, m.refill); if(d >= 1 && d <= 366) known = d; }
+    const days = known || 30;
+    const next = new Date(); next.setDate(next.getDate() + days);
+    const ov = openSheet(
+      `<h2 id="pf-dose-title">${supp ? 'Reordered' : 'Refilled'} ${esc(m.name)}</h2>` +
+      (m.petName ? `<p class="pf-dose-pet">${esc(m.petName)}</p>` : '') +
+      `<label for="pf-refill-next" class="pf-dose-muted" style="display:block;font-weight:700;color:#1f2937;margin-top:14px;">Next ${supp ? 'reorder' : 'refill'} date</label>` +
+      `<input type="date" id="pf-refill-next" min="${today}" value="${localISO(next)}">` +
+      `<p class="pf-dose-muted">${known ? `${days} days from today, the same as last time. Change it if this supply lasts a different time.` : `${days} days from today. Change it to when this supply runs out.`}</p>` +
+      '<p class="pf-dose-err" id="pf-refill-err" role="alert"></p>' +
+      '<button type="button" class="pf-dose-primary" data-save>Save</button>' +
+      `<button type="button" class="pf-dose-secondary" data-none>No more ${supp ? 'reorders' : 'refills'}</button>` +
+      '<button type="button" class="pf-dose-link" data-close>Cancel</button>');
+    const err = ov.querySelector('#pf-refill-err');
+    const finish = () => { saveList('medications', list); closeDoseSheet(); if(typeof refreshAll === 'function') refreshAll(); else renderMedications(); };
+    ov.querySelector('[data-save]').onclick = () => {
+      const v = ov.querySelector('#pf-refill-next').value;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(v)) { err.textContent = 'Choose the next date.'; return; }
+      if(v <= today) { err.textContent = 'Choose a date after today.'; return; }
+      m.refillLast = today; m.refillEvery = isoDays(today, v); m.refill = v;
+      finish();
+    };
+    ov.querySelector('[data-none]').onclick = () => { m.refillLast = today; m.refill = ''; finish(); };
+  };
+
+  // ---- mirrors app v3.36.0: "doses due" popup when the demo opens ----
+  const duePopupSeen = new Set();
+  function maybeDuePopup() {
+    if(document.getElementById('pf-dose-sheet')) return;
+    const now = Date.now();
+    const list = getList('medications').filter(m => !m.archived).map(m => ({ m, st: ensure(m) }))
+      .filter(x => x.st && x.st.pending && !heldUntil(x.m, x.st) && x.st.pending.due.getTime() <= now + 15 * 60000)
+      .sort((a, b) => a.st.pending.due - b.st.pending.due);
+    if(!list.length || list.every(x => duePopupSeen.has(x.st.pending.id))) return;
+    list.forEach(x => duePopupSeen.add(x.st.pending.id));
+    const anyMed = list.some(x => !medIsSupplement(x.m));
+    const rows = list.map((x, i) => {
+      const due = x.st.pending.due, late = due.getTime() <= now;
+      return `<div class="pf-due-row" data-row="${i}"><p class="pf-due-name">${esc(x.m.name || 'Medication')}</p>` +
+        `<p class="pf-dose-pet">${x.m.petName ? esc(x.m.petName) + ' \u00b7 ' : ''}${late ? 'Due ' + when(due) : 'Due at ' + clock(due)}</p>` +
+        '<div data-btns><div class="pf-dose-btns"><button type="button" class="pf-dose-given" data-g>\u2713 Given</button><button type="button" class="pf-dose-skip" data-s>Skip</button></div>' +
+        (late ? '<button type="button" class="pf-due-other" data-at>Given at a different time</button>' : '') + '</div></div>';
+    }).join('');
+    const ov = openSheet(`<h2 id="pf-dose-title">${list.length === 1 ? (anyMed ? 'Dose due' : 'Serving due') : list.length + ' doses due'}</h2>` + rows +
+      '<button type="button" class="pf-dose-secondary" data-meds>Open Medications</button>' +
+      '<button type="button" class="pf-dose-link" data-close>Not now</button>', 'pf-due-card');
+    ov.querySelector('[data-meds]').onclick = () => { closeDoseSheet(); if(typeof window.goToTab === 'function') window.goToTab('medications'); };
+    let left = list.length;
+    list.forEach((x, i) => {
+      const row = ov.querySelector(`[data-row="${i}"]`), btns = row.querySelector('[data-btns]');
+      const go = taken => {
+        logDose(x.m.__id, taken);
+        const e = x.st.events[0];
+        btns.outerHTML = `<p class="pf-dose-status" style="margin-top:6px;">${taken ? '\u2713 Given ' + clock(e.taken) : 'Skipped'}</p>`;
+        if(!--left) {
+          ov.querySelector('[data-meds]').insertAdjacentHTML('beforebegin', '<p class="pf-dose-muted">Undo is on the Medications page for 5 minutes.</p>');
+          ov.querySelector('[data-close]').textContent = 'Done';
+        }
+      };
+      row.querySelector('[data-g]').onclick = () => go(true);
+      row.querySelector('[data-s]').onclick = () => go(false);
+      const at = row.querySelector('[data-at]'); if(at) at.onclick = () => window.pfDoseGivenAt(x.m.__id);
+    });
+  }
+  setTimeout(maybeDuePopup, 800);
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') maybeDuePopup(); });
 
   function doseBoxHTML(m) {
     const st = ensure(m);
@@ -2830,7 +3017,8 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     const last = st.events[0];
     let html = '<div class="pf-dose-box">';
     if(last && last.logged && Date.now() - last.logged.getTime() < UNDO_MS) {
-      html += `<div class="pf-dose-undo"><span>${last.status === 'taken' ? 'Given ' + clock(last.taken) : 'Skipped'}</span>` +
+      const sameDay = last.taken && last.taken.toDateString() === new Date().toDateString();
+      html += `<div class="pf-dose-undo"><span>${last.status === 'taken' ? 'Given ' + (sameDay ? clock(last.taken) : when(last.taken)) : 'Skipped'}</span>` +
               `<button type="button" onclick="pfDoseUndo(${m.__id})">Undo</button></div>`;
     }
     if(st.pending) {
@@ -2839,7 +3027,8 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
       const late = !hold && due.getTime() <= Date.now();
       const open = !hold && Date.now() >= due.getTime() - OPEN_BEFORE_MS;
       if(last && last.status === 'missed') {
-        html += `<p class="pf-dose-missed">The last ${noun} wasn\u2019t recorded (due ${when(last.due)}).${missed ? ' <strong>If missed:</strong> ' + esc(missed) : ''}</p>`;
+        html += `<p class="pf-dose-missed">The last ${noun} wasn\u2019t recorded (due ${when(last.due)}).${missed ? ' <strong>If missed:</strong> ' + esc(missed) : ''}</p>` +
+                (recordableMissed(st) ? recordBtn(m) : '');
       } else if(late && missed) {
         html += `<p class="pf-dose-missed"><strong>If missed:</strong> ${esc(missed)}</p>`;
       }
@@ -2847,11 +3036,13 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
               (late ? `Due now · <span style="white-space:nowrap;">${clock(due)}</span>` : `Next ${noun}: <span style="white-space:nowrap;">${when(due)}</span>`) + '</p>';
       html += open
         ? `<div class="pf-dose-btns"><button type="button" class="pf-dose-given" onclick="pfDoseLog(${m.__id}, true)">✓ Given</button>` +
-          `<button type="button" class="pf-dose-skip" onclick="pfDoseLog(${m.__id}, false)">Skip</button></div>`
+          `<button type="button" class="pf-dose-skip" onclick="pfDoseLog(${m.__id}, false)">Skip</button></div>` +
+          (late ? `<button type="button" class="pf-dose-early" style="display:block;" onclick="pfDoseGivenAt(${m.__id})">Given at a different time</button>` : '')
         : hold
           ? `<button type="button" class="pf-dose-early" onclick="pfDoseHeld(${m.__id})">${due.getTime() <= Date.now() ? 'Give now' : 'Give early'}</button>`
           : `<button type="button" class="pf-dose-early" onclick="pfDoseEarly(${m.__id})">Give early</button>`;
     } else {
+      if(recordableMissed(st)) html += `<p class="pf-dose-missed">The last ${noun} wasn\u2019t recorded (due ${when(last.due)}).</p>` + recordBtn(m);
       html += `<p class="font-body text-sm text-secondary">No more ${noun}s scheduled.</p>`;
     }
     const lastTaken = st.events.find(e => e.status === 'taken');
