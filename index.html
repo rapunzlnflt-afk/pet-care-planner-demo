@@ -4705,7 +4705,11 @@ refreshAll();
     var list = notes();
     for (var i=0;i<list.length;i++){
       if (String(list[i].__id) === String(id)){
-        list[i] = Object.assign({}, list[i], { flag: !list[i].flag });
+        // v3.37.0 (mirrors app): checking a flagged note off as Discussed records
+        // when, and the note no longer offers "Flag for vet" (re-flag from Edit).
+        var was = !!list[i].flag;
+        list[i] = Object.assign({}, list[i], { flag: !was });
+        if (was) list[i].discussed = iso(); else delete list[i].discussed;
         saveNotes(list);
         break;
       }
@@ -4766,7 +4770,11 @@ refreshAll();
     if (!opts.readOnly){
       actions = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-color);justify-content:flex-end;">' +
         '<button type="button" onclick="window.pfShowUpdateForm(\''+ctx+'\','+n.__id+')" style="'+btn+'">+ Add update</button>' +
-        '<button type="button" onclick="window.pfToggleNoteFlag('+n.__id+')" style="'+(n.flag?btnMuted:btn)+'">'+(n.flag ? '✓ Discussed with vet' : '📌 Flag for vet')+'</button>' +
+        (n.flag
+          ? '<button type="button" onclick="window.pfToggleNoteFlag('+n.__id+')" style="'+btnMuted+'">✓ Discussed with vet</button>'
+          : (n.discussed
+            ? '<span style="display:inline-flex;align-items:center;color:#047857;font-weight:700;font-size:13px;padding:0 4px;">✓ Discussed '+esc(fdate(n.discussed))+'</span>'
+            : '<button type="button" onclick="window.pfToggleNoteFlag('+n.__id+')" style="'+btn+'">📌 Flag for vet</button>')) +
         '<button type="button" onclick="window.pfEditNote('+n.__id+')" style="'+btn+'">✎ Edit</button>' +
         '<button type="button" onclick="window.pfDeleteNote('+n.__id+')" style="'+btnDanger+'">✕ Delete</button>' +
         '</div>';
@@ -5806,6 +5814,9 @@ try {
     if(v.reason) body.push('<p class="font-body text-sm text-primary mt-1"><strong>Reason:</strong> '+v.reason+'</p>');
     if(!isUpcoming && v.diagnosis) body.push('<p class="font-body text-sm text-secondary mt-1">'+v.diagnosis+'</p>');
     if(v.next) body.push('<p class="font-body text-sm mt-1" style="color:#5B5BD6;">Follow-up: '+fmtDateLocal(v.next)+(v.nextTime?' · '+fmtTime(v.nextTime):'')+'</p>');
+    // v3.37.0 (mirrors app): a linked follow-up is its own appointment; this line mirrors it.
+    else if(v.followUpId != null && v.followUpDate) body.push('<p class="font-body text-sm mt-1" style="color:#5B5BD6;">Follow-up scheduled: '+fmtDateLocal(v.followUpDate)+(v.followUpTime?' · '+fmtTime(v.followUpTime):'')+'</p>');
+    if(v.followUpOf != null){ var _o=(getList('vet-visits')||[]).find(function(x){return String(x.__id)===String(v.followUpOf);}); if(_o) body.push('<p class="font-body text-xs text-secondary mt-1">Follow-up to the '+fmtDateLocal(_o.date)+' visit</p>'); }
     if(!isUpcoming){
       var meta = [];
       if(v.cost) meta.push('<span style="background:rgba(91,91,214,0.08);color:#5B5BD6;font-size:13px;font-weight:600;padding:3px 10px;border-radius:12px;">'+fmtMoney(v.cost)+'</span>');
@@ -7621,5 +7632,141 @@ try {
     var el = e.target && e.target.closest ? e.target.closest('button[id], a[id]') : null;
     if (el && /print/i.test(el.id)) mark('printed');
   }, true);
+})();
+</script>
+<script>
+/* === Pawfolio v3.37.0 — a follow-up is a real appointment ===
+   A follow-up used to live only as a "next" date on the visit it came from, so
+   it never showed under Upcoming Appointments and couldn't be edited, filled in
+   or deleted on its own. Now, saving a visit with a follow-up date creates a
+   scheduled appointment (type "Follow-up") linked back to that visit:
+     origin.followUpId  -> the appointment's __id
+     origin.followUpDate / followUpTime -> mirror of the appointment, for the card
+     appt.followUpOf    -> the origin's __id
+   The origin's next/nextTime are cleared once linked, so reminders, phone
+   alerts and the Overview come from the appointment only (no duplicates).
+   Editing the follow-up on the original visit moves the appointment; removing
+   it deletes the appointment if it hasn't happened yet; deleting the
+   appointment clears the line on the original visit. Follow-up dates already
+   in the past are left as they were. */
+(function(){
+  if (window.__pf_followup_appt) return; window.__pf_followup_appt = true;
+  var $ = function(id){ return document.getElementById(id); };
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function sched(v){ return window.pfVisitIsScheduled ? window.pfVisitIsScheduled(v) : (v && v.date >= today()); }
+  function outcome(v){ return window.pfVisitHasOutcome ? window.pfVisitHasOutcome(v) : false; }
+  // Use the app's own id generator so a new appointment can never share an id
+  // with a visit saved in the same millisecond.
+  var lastId = 0;
+  function newId(){
+    if (typeof window.nextId === 'function') return window.nextId();
+    var t = Date.now()*1000; if (t <= lastId) t = lastId + 1; lastId = t; return t;
+  }
+  function reasonFor(o){ return o.reason ? ('Follow-up: ' + o.reason) : 'Follow-up'; }
+
+  // Mutates the list in place. Returns true when anything changed.
+  function syncFollowUps(list, editedId){
+    if (!Array.isArray(list)) return false;
+    var t = today(), changed = false;
+    var byId = {}; list.forEach(function(v){ if (v) byId[String(v.__id)] = v; });
+    function makeAppt(o){
+      var a = { __id:newId(), petId:o.petId, petName:o.petName, date:o.next, time:o.nextTime || '',
+                vet:o.vet || '', type:'Follow-up', reason:reasonFor(o), diagnosis:'', weight:'', cost:0,
+                next:'', nextTime:'', status:'scheduled', followUpOf:o.__id };
+      list.push(a); byId[String(a.__id)] = a; return a;
+    }
+    function link(o, a){
+      o.followUpId = a.__id; o.followUpDate = a.date; o.followUpTime = a.time || '';
+      o.next = ''; o.nextTime = '';
+    }
+    function unlink(o){ delete o.followUpId; delete o.followUpDate; delete o.followUpTime; }
+    list.slice().forEach(function(o){
+      if (!o || o.followUpOf) return;
+      var edited = editedId != null && String(o.__id) === String(editedId);
+      var a = o.followUpId != null ? byId[String(o.followUpId)] : null;
+      if (o.followUpId != null){
+        if (edited){
+          if (o.next){
+            if (a && sched(a) && !outcome(a)){ a.date = o.next; a.time = o.nextTime || ''; if (!a.vet) a.vet = o.vet || ''; }
+            else if (!a){ a = makeAppt(o); }
+            if (a){ link(o, a); changed = true; }
+          } else {
+            // Follow-up removed on the original visit.
+            if (a && sched(a) && !outcome(a)){ list.splice(list.indexOf(a), 1); delete byId[String(a.__id)]; }
+            unlink(o); changed = true;
+          }
+        } else if (!a){
+          unlink(o); changed = true;              // appointment was deleted
+        } else if (o.followUpDate !== a.date || (o.followUpTime||'') !== (a.time||'')){
+          o.followUpDate = a.date; o.followUpTime = a.time || ''; changed = true;   // rescheduled
+        }
+        return;
+      }
+      // Not linked yet: a follow-up still ahead becomes a real appointment.
+      if (o.next && o.next >= t && !sched(o)){
+        link(o, makeAppt(o)); changed = true;
+      }
+    });
+    return changed;
+  }
+  window.pfSyncFollowUps = syncFollowUps;
+
+  // Every write of the visit list goes through here, so the new-visit form, the
+  // edit form, Delete and restores all stay consistent.
+  if (typeof window.saveList === 'function' && !window.saveList.__pfFollowUp){
+    var origSave = window.saveList;
+    var wrapped = function(type, list){
+      if (type === 'vet-visits'){
+        var f = $('vet-form');
+        try { syncFollowUps(list, f && f.dataset ? f.dataset.editId : null); } catch(e){}
+      }
+      return origSave.apply(this, arguments);
+    };
+    wrapped.__pfFollowUp = true;
+    window.saveList = wrapped;
+  }
+
+  // Editing the original visit: show its follow-up from the linked appointment.
+  if (typeof window.pfEditVisit === 'function' && !window.pfEditVisit.__pfFollowUp){
+    var origEdit = window.pfEditVisit;
+    window.pfEditVisit = function(id){
+      var r = origEdit.apply(this, arguments);
+      // Other layers re-fill the form right after an edit opens (including the
+      // follow-up time, from the now-empty "next" fields), so fill in last.
+      setTimeout(function(){ fillFollowUp(id); }, 60);
+      return r;
+    };
+    window.pfEditVisit.__pfFollowUp = true;
+  }
+  function fillFollowUp(id){
+      try {
+        var visits = window.getList('vet-visits');
+        var o = visits.find(function(x){ return String(x.__id) === String(id); });
+        if (o && o.followUpId != null && !o.next){
+          var a = visits.find(function(x){ return String(x.__id) === String(o.followUpId); });
+          if (a){
+            if ($('vet-next')) $('vet-next').value = a.date || '';
+            if (typeof window.pfSetTimeSelect === 'function') window.pfSetTimeSelect('vet-next-time', a.time || '');
+            else if ($('vet-next-time')) $('vet-next-time').value = a.time || '';
+            var w=$('vet-next-wrap'); if(w) w.style.display='';
+            var tw=$('vet-next-time-wrap'); if(tw) tw.style.display='';
+            var fb=$('vet-followup-btn'); if(fb){ fb.textContent='− Remove follow-up'; fb.style.display=''; }
+          }
+        }
+      } catch(e){}
+  }
+
+  // One-time upgrade of follow-ups saved before this version.
+  function boot(){
+    try {
+      var visits = window.getList('vet-visits');
+      if (syncFollowUps(visits, null)){
+        window.saveList('vet-visits', visits);
+        if (typeof window.refreshAll === 'function') window.refreshAll();
+      }
+    } catch(e){}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 0); });
+  else setTimeout(boot, 0);
 })();
 </script>
