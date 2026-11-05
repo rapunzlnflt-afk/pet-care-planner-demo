@@ -25,6 +25,7 @@ These differentiate the demo from the paid full version:
 - Backup-reminder "Export now" button disabled
 - Service worker registration skipped
 - Silent daily update check skipped
+- **Sitter mode / Send to a sitter** (mirrors app v3.40.0) run against a local fake inbox (`pawfolioDemoInbox` in demo storage). `window.PAWFOLIO_INTAKE_FN_URL` is set to `demo-offline:pawfolio-sitter-inbox` and `PawfolioIntake.register/lookupCode/submit/list/ack` are replaced before use, so nothing goes to Supabase. Encryption is real. Sample sitter Happy Tails Pet Sitting, code `WAGS-2468`; sample clients Maya Chen and Jordan Lee (Jordan arrives as a new form when Sitter mode is turned on). Client card **Print** disabled.
 
 ## Files
 
@@ -32,6 +33,7 @@ These differentiate the demo from the paid full version:
 |------|---------|
 | `index.html` | The demo page |
 | `icon-192.png`, `icon-512.png` | Paw logo (same as full app) |
+| `intake-crypto.js` | Sitter intake encryption, byte-identical copy of the app's file (do not edit here) |
 
 ## Releasing a new demo version
 
