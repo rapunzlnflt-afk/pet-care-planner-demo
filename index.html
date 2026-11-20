@@ -4628,8 +4628,8 @@ refreshAll();
 })();
 </script>
  
-<!-- Cloudflare Web Analytics: privacy-first, no cookies, no consent banner needed -->
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "5673e14274004df9a11f87d759a6b624"}'></script>
+<!-- Cloudflare Web Analytics (skipped on devices opted out at /dont-count-me/) -->
+<script>(function(){try{if(localStorage.getItem("ct_notrack")==="1")return}catch(e){}var s=document.createElement("script");s.defer=true;s.id="cf-beacon";s.src="https://static.cloudflareinsights.com/beacon.min.js";s.setAttribute("data-cf-beacon",'{"token": "5673e14274004df9a11f87d759a6b624"}');(document.body||document.head).appendChild(s)})();</script>
 <script>
 /* === Pawfolio demo v3.7.0 — Notes + Timeline (mirrored from the full app v3.13.1) ===
    Notes tab: dated observations/incidents ("Rover is limping today", "got sprayed by a
