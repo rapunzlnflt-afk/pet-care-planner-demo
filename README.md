@@ -22,7 +22,8 @@ These differentiate the demo from the paid full version:
 - **Import** button replaced with a disabled label (and the JS listener uses `?.addEventListener` so it doesn't crash on the missing input)
 - **Check for updates** button disabled
 - **Print / Export** sitter sheet button disabled (both main and preview)
-- **Share as a link** sitter button shown disabled (demo v3.20.0, mirrors app v3.46.0's "Give it to your sitter" card: Print, Share as a link, Send to a Pawfolio sitter)
+- **Share as a link** sitter button shown disabled (demo v3.21.0, mirrors app v3.47.0: "Give it to your sitter" is a compact button that opens a popup with Print, Share as a link and Send to a Pawfolio sitter; Print and Share stay disabled)
+- **Tidier pet cards** (mirrors app v3.47.0): in Pet Sitter Info each pet card starts collapsed to the name, species and a one-line summary of included sections, and opens on tap. Inside, the "What to include" chips sit in one row, followed by grouped sections (Feeding, one combined Medications & supplements list, Walks, the extra sections, Additional notes).
 - Backup-reminder "Export now" button disabled
 - Service worker registration skipped
 - Silent daily update check skipped
