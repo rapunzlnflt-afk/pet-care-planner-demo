@@ -24,6 +24,7 @@ These differentiate the demo from the paid full version:
 - **Print / Export** sitter sheet button disabled (both main and preview)
 - **Share as a link** sitter button shown disabled (demo v3.21.0, mirrors app v3.47.0: "Give it to your sitter" is a compact button that opens a popup with Print, Share as a link and Send to a Pawfolio sitter; Print and Share stay disabled)
 - **Tidier pet cards** (mirrors app v3.47.0): in Pet Sitter Info each pet card starts collapsed to the name, species and a one-line summary of included sections, and opens on tap. Inside, the "What to include" chips sit in one row, followed by grouped sections (Feeding, one combined Medications & supplements list, Walks, the extra sections, Additional notes).
+- **Clearer pet sections and dark-mode popup** (demo v3.22.0, mirrors app v3.48.0): each included section (Feeding, Medications & supplements, Walks, etc.) sits in its own soft panel with a larger heading and accent bar; field labels inside are smaller than the heading. The "Give it to your sitter" popup now follows dark mode.
 - Backup-reminder "Export now" button disabled
 - Service worker registration skipped
 - Silent daily update check skipped
