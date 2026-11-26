@@ -29,7 +29,7 @@
   <link rel="canonical" href="https://cleartrackapps.com/pet-care-planner-demo/">
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#5B5BD6">
-                          <meta name="app-version" content="3.22.0">
+                          <meta name="app-version" content="3.23.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pawfolio">
@@ -226,6 +226,19 @@
     #pf-dose-sheet .pf-dose-secondary { margin-top: 10px; background: #fff; color: #1f2937; border: 1px solid #d1d5db; border-radius: 12px; padding: 12px; font-size: 15px; font-weight: 600; }
     #pf-dose-sheet .pf-dose-link { margin-top: 6px; background: none; border: none; color: #6b7280; padding: 10px; font-size: 14px; font-weight: 600; }
     #pf-dose-sheet button:disabled { opacity: 0.6; }
+    /* demo v3.23.0 (mirrors app v3.49.0): PDF sheet for the Timeline print */
+    #pf-pdf-sheet{position:fixed;inset:0;z-index:10003;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center;font-family:'Karla',Arial,sans-serif;}
+    #pf-pdf-sheet .pf-pdf-panel{background:#fff;color:#1e293b;width:100%;max-width:440px;border-radius:16px 16px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.25);}
+    @media (min-width:640px){#pf-pdf-sheet{align-items:center;}#pf-pdf-sheet .pf-pdf-panel{border-radius:16px;}}
+    #pf-pdf-sheet h3{margin:0 0 6px;font-size:18px;font-weight:700;}
+    #pf-pdf-sheet p{margin:0 0 14px;font-size:15px;line-height:1.45;color:#475569;}
+    #pf-pdf-sheet .pf-pdf-btns{display:flex;flex-direction:column;gap:8px;}
+    #pf-pdf-sheet .pf-pdf-go,#pf-pdf-sheet .pf-pdf-alt{display:block;text-align:center;text-decoration:none;font-size:16px;font-weight:700;border-radius:10px;padding:12px 14px;cursor:pointer;border:1px solid transparent;font-family:inherit;}
+    #pf-pdf-sheet .pf-pdf-go{background:#5B5BD6;color:#fff;}
+    #pf-pdf-sheet .pf-pdf-alt{background:transparent;color:#5B5BD6;border-color:rgba(91,91,214,.35);}
+    [data-theme="dark"] #pf-pdf-sheet .pf-pdf-panel{background:#1e2732;color:#e8e6f0;}
+    [data-theme="dark"] #pf-pdf-sheet p{color:#9b98b0;}
+    [data-theme="dark"] #pf-pdf-sheet .pf-pdf-alt{color:#c4b5fd;border-color:rgba(139,124,248,.35);}
     #pf-dose-sheet input[type="time"] { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 12px; font-size: 18px; border: 1px solid #d1d5db; border-radius: 12px; background: #fff; color: #1f2937; }
     #pf-dose-sheet .pf-dose-err { margin: 8px 0 0; font-size: 14px; color: #b91c1c; }
     #pf-dose-sheet .pf-dose-err:empty { display: none; }
@@ -919,6 +932,11 @@ body.pf-ho-lock{overflow:hidden;}
       </label>
       <p style="font-size:12px;color:#64748b;margin-top:4px;line-height:1.5;">Adds a Clients area where your clients' intake forms arrive. Free in Pawfolio Free.</p>
      </div>
+     <!-- Handbook (demo v3.23.0, mirrors app v3.43.1). The public PDF, same link as the full app. -->
+     <a id="pf-handbook-link" href="https://cleartrackapps.com/pawfolio/Pawfolio-Handbook.pdf" target="_blank" rel="noopener" style="margin-top:8px;width:100%;padding:6px 8px;background:transparent;color:#5B5BD6;border:1.5px solid #5B5BD6;border-radius:6px;font-size:13px;font-weight:600;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;box-sizing:border-box;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg>
+      <span>Pawfolio Handbook</span>
+     </a>
      <button id="check-updates-btn" disabled title="Disabled in demo" style="margin-top:6px;width:100%;padding:7px 10px;background:transparent;color:#5B5BD6;border:1.5px solid #5B5BD6;border-radius:6px;font-size:13px;font-weight:600;cursor:not-allowed;opacity:0.45;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       <span>Check for updates</span>
@@ -2969,17 +2987,36 @@ body.pf-ho-lock{overflow:hidden;}
   }
   function medById(id) { return getList('medications').find(x => String(x.__id) === String(id)); }
 
-  function logDose(id, taken, at) {
+  // doseId (demo v3.23.0, mirrors app v3.54.0): the dose the Given/Skip button
+  // was drawn for. A screen left open past the 90-minute grace still shows that
+  // dose; by the tap it has gone missed and the next one is queued. Given then
+  // records the missed dose at the tap time (same rules as "It was given -
+  // record the time"), instead of quietly logging the next dose. Skip leaves it
+  // missed. Returns 'logged', 'late', 'missed' or ''.
+  function logDose(id, taken, at, doseId) {
     const m = medById(id); const st = m && ensure(m);
-    if(!st || !st.pending) return;
+    if(!st) return '';
+    if(doseId != null && (!st.pending || st.pending.id !== doseId)) {
+      const e = st.events.find(x => x.id === doseId);
+      if(!e || e.status !== 'missed') { renderMedications(); return ''; }
+      if(!taken || recordableMissed(st) !== e) { renderMedications(); return 'missed'; }
+      const now = new Date();
+      if(tooSoon(m, st, now, e)) { renderMedications(); return ''; }
+      e.status = 'taken'; e.taken = now; e.logged = now; e.recordedLate = true; e.prevPending = st.pending;
+      if(medDoseEvery(m)) { const n = nextDue(m, now); if(n && n > now) queue(m, st, n); }
+      renderMedications();
+      return 'late';
+    }
+    if(!st.pending) return '';
     const now = new Date(), p = st.pending, t = at || now;
     st.events.unshift({ id: p.id, due: p.due, status: taken ? 'taken' : 'skipped', taken: taken ? t : null, logged: now, prevPending: p });
     // Rolling: the next one is counted from when this one was given.
     // Set times: the next set time after this dose.
     queue(m, st, medDoseEvery(m) ? nextDue(m, t) : nextFixed(m, new Date(Math.max(t, p.due))));
     renderMedications();
+    return 'logged';
   }
-  window.pfDoseLog = (id, taken) => logDose(id, taken);
+  window.pfDoseLog = (id, taken, doseId) => logDose(id, taken, null, doseId);
 
   // Minutes between doses, as the full app works it out.
   function gapMin(m) {
@@ -3223,10 +3260,12 @@ body.pf-ho-lock{overflow:hidden;}
     let left = list.length;
     list.forEach((x, i) => {
       const row = ov.querySelector(`[data-row="${i}"]`), btns = row.querySelector('[data-btns]');
+      const doseId = x.st.pending.id;
       const go = taken => {
-        logDose(x.m.__id, taken);
-        const e = x.st.events[0];
-        btns.outerHTML = `<p class="pf-dose-status" style="margin-top:6px;">${taken ? '\u2713 Given ' + clock(e.taken) : 'Skipped'}</p>`;
+        const res = logDose(x.m.__id, taken, null, doseId);
+        if(!res) return;
+        const e = x.st.events.find(ev => ev.id === doseId) || x.st.events[0];
+        btns.outerHTML = `<p class="pf-dose-status" style="margin-top:6px;">${res === 'missed' ? 'Not recorded in time' : taken ? '\u2713 Given ' + clock(e.taken) : 'Skipped'}</p>`;
         if(!--left) {
           ov.querySelector('[data-meds]').insertAdjacentHTML('beforebegin', '<p class="pf-dose-muted">Undo is on the Medications page for 5 minutes.</p>');
           ov.querySelector('[data-close]').textContent = 'Done';
@@ -3266,8 +3305,8 @@ body.pf-ho-lock{overflow:hidden;}
       html += `<p class="font-body text-sm" style="font-weight:700;${late ? 'color:#b45309;' : 'color:var(--text-primary);'}">` +
               (late ? `Due now · <span style="white-space:nowrap;">${clock(due)}</span>` : `Next ${noun}: <span style="white-space:nowrap;">${when(due)}</span>`) + '</p>';
       html += open
-        ? `<div class="pf-dose-btns"><button type="button" class="pf-dose-given" onclick="pfDoseLog(${m.__id}, true)">✓ Given</button>` +
-          `<button type="button" class="pf-dose-skip" onclick="pfDoseLog(${m.__id}, false)">Skip</button></div>` +
+        ? `<div class="pf-dose-btns"><button type="button" class="pf-dose-given" onclick="pfDoseLog(${m.__id}, true, ${st.pending.id})">✓ Given</button>` +
+          `<button type="button" class="pf-dose-skip" onclick="pfDoseLog(${m.__id}, false, ${st.pending.id})">Skip</button></div>` +
           (late ? `<button type="button" class="pf-dose-early" style="display:block;" onclick="pfDoseGivenAt(${m.__id})">Given at a different time</button>` : '')
         : hold
           ? `<button type="button" class="pf-dose-early" onclick="pfDoseHeld(${m.__id})">${due.getTime() <= Date.now() ? 'Give now' : 'Give early'}</button>`
@@ -5413,7 +5452,9 @@ refreshAll();
     } else fallback();
   }
 
-  function printSummary(){
+  // demo v3.23.0: the sheet is built once and either printed from a popup or
+  // turned into a PDF (mirrors the app's v3.49.0/v3.50.0 PDF fallback).
+  function summarySheet(){
     var sel = $('timeline-pet');
     var who = (sel && sel.value && sel.options[sel.selectedIndex]) ? sel.options[sel.selectedIndex].text : 'All pets';
     // The date and pet sit in their own left-hand column, so every entry's text
@@ -5452,11 +5493,170 @@ refreshAll();
       (rows ? '<ol>'+rows+'</ol>' : '<p>No entries.</p>') +
       '<p class="foot-verse">&ldquo;The righteous care for the needs of their animals.&rdquo; <cite>&mdash; Proverbs 12:10<\/cite><\/p>' +
       '<footer>Created with Pawfolio<\/footer><\/body><\/html>';
-    var w = window.open('', '_blank');
-    if (!w){ say('Please allow pop-ups to print the timeline.'); return; }
-    w.document.write(html); w.document.close();
-    setTimeout(function(){ try { w.focus(); w.print(); } catch(e){} }, 250);
+    return { html: html, who: who };
   }
+
+  function printSummary(){
+    var sheet = summarySheet();
+    // iOS 27 Home Screen apps ignore print (WebKit bug 327504): go straight to the PDF.
+    if (pfPrintBlocked()) { timelinePdf(sheet, false); return; }
+    var w = window.open('', '_blank');
+    // In-app browsers (Instagram, Pinterest, Facebook) often refuse the popup:
+    // offer the PDF instead of a dead end.
+    if (!w){ timelinePdf(sheet, true); return; }
+    w.document.write(sheet.html); w.document.close();
+    var began = false;
+    try { w.addEventListener('beforeprint', function(){ began = true; }); } catch(e){}
+    setTimeout(function(){
+      try { w.focus(); w.print(); } catch(e){}
+      // If printing quietly does nothing, close the blank tab and offer the PDF.
+      setTimeout(function(){
+        var printing = false; try { printing = !!(w.matchMedia && w.matchMedia('print').matches); } catch(e){}
+        if (began || printing) return;
+        var gone = false; try { gone = w.closed; } catch(e){}
+        if (gone) return;
+        try { w.close(); } catch(e){}
+        timelinePdf(sheet, true);
+      }, 1200);
+    }, 250);
+  }
+
+  // ---------- demo v3.23.0: PDF of the Timeline (mirrors app v3.49.0 / v3.50.0) ----------
+  // Made on this device with the vendored html2canvas; nothing is uploaded.
+  function pfPrintBlocked(){
+    var ua = navigator.userAgent || '';
+    var ios = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var standalone = navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    return ios && standalone;
+  }
+  var h2cPromise = null;
+  function loadH2c(){
+    if (window.html2canvas) return Promise.resolve(window.html2canvas);
+    if (h2cPromise) return h2cPromise;
+    h2cPromise = new Promise(function(res, rej){
+      var sc = document.createElement('script');
+      sc.src = 'vendor/html2canvas/html2canvas.min.js';
+      sc.onload = function(){ window.html2canvas ? res(window.html2canvas) : rej(new Error('html2canvas missing')); };
+      sc.onerror = function(){ h2cPromise = null; rej(new Error('Could not load the PDF maker.')); };
+      document.head.appendChild(sc);
+    });
+    return h2cPromise;
+  }
+  // One JPEG per US Letter page, half-inch margins (same writer as the app).
+  function buildPdf(pages){
+    var enc = new TextEncoder(), parts = [], len = 0, offs = [];
+    function add(x){ var b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; }
+    function obj(n, body){ offs[n] = len; add(n + ' 0 obj\n'); body(); add('\nendobj\n'); }
+    var W = 612, H = 792, M = 36, n = pages.length, kids = [];
+    for (var i = 0; i < n; i++) kids.push((3 + i * 3) + ' 0 R');
+    add('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+    obj(1, function(){ add('<< /Type /Catalog /Pages 2 0 R >>'); });
+    obj(2, function(){ add('<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + n + ' >>'); });
+    pages.forEach(function(pg, i){
+      var po = 3 + i * 3, co = po + 1, io = po + 2;
+      var w = W - 2 * M, h = w * pg.h / pg.w;
+      var cs = 'q ' + w.toFixed(2) + ' 0 0 ' + h.toFixed(2) + ' ' + M + ' ' + (H - M - h).toFixed(2) + ' cm /Im0 Do Q';
+      obj(po, function(){ add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /XObject << /Im0 ' + io + ' 0 R >> >> /Contents ' + co + ' 0 R >>'); });
+      obj(co, function(){ add('<< /Length ' + cs.length + ' >>\nstream\n' + cs + '\nendstream'); });
+      obj(io, function(){ add('<< /Type /XObject /Subtype /Image /Width ' + pg.w + ' /Height ' + pg.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + pg.jpg.length + ' >>\nstream\n'); add(pg.jpg); add('\nendstream'); });
+    });
+    var total = 3 + n * 3, xref = len, x = 'xref\n0 ' + total + '\n0000000000 65535 f \n';
+    for (var k = 1; k < total; k++) x += String(offs[k]).padStart(10, '0') + ' 00000 n \n';
+    add(x + 'trailer\n<< /Size ' + total + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
+    return new Blob(parts, { type: 'application/pdf' });
+  }
+  function dataUrlBytes(u){ var b = atob(u.split(',')[1]), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+  // The popup sheet's own HTML, drawn off-screen at Letter width in a frame
+  // so its styles can't touch the demo page.
+  function makePdf(html){
+    var CSSW = 760;
+    var fr = document.createElement('iframe');
+    fr.setAttribute('aria-hidden', 'true'); fr.tabIndex = -1;
+    fr.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + CSSW + 'px;height:1200px;border:0;visibility:hidden;';
+    document.body.appendChild(fr);
+    var cleanup = function(){ try { fr.remove(); } catch(e){} };
+    return loadH2c().then(function(h2c){
+      var d = fr.contentDocument; d.open(); d.write(html); d.close();
+      // The picture-maker skips list numbers, so write them in.
+      var n = 0;
+      [].forEach.call(d.querySelectorAll('ol'), function(ol){ ol.style.cssText = 'list-style:none;padding-left:0;margin:0;'; });
+      [].forEach.call(d.querySelectorAll('ol > li'), function(li){
+        var row = li.querySelector('.row'); if (!row) return;
+        li.style.marginBottom = '10px';   // a clear gap between entries for the page breaks
+        row.style.gridTemplateColumns = '24px 100px minmax(0,1fr)';
+        var num = d.createElement('span'); num.textContent = (++n) + '.';
+        num.style.cssText = 'text-align:right;color:#334155;font-size:12.5px;font-weight:700;line-height:1.35;font-variant-numeric:tabular-nums;';
+        row.insertBefore(num, row.firstChild);
+      });
+      d.body.style.margin = '0'; d.body.style.width = CSSW + 'px'; d.body.style.boxSizing = 'border-box'; d.body.style.background = '#fff';
+      fr.style.height = Math.max(200, d.body.scrollHeight + 40) + 'px';
+      return (d.fonts && d.fonts.ready ? d.fonts.ready : Promise.resolve()).then(function(){
+        return h2c(d.body, { scale: 2, backgroundColor: '#ffffff', logging: false, windowWidth: CSSW, width: CSSW });
+      });
+    }).then(function(canvas){
+      var k = canvas.width / CSSW, pageCss = CSSW * 720 / 540, total = canvas.height / k, pages = [], y = 0;
+      var ctx0 = canvas.getContext('2d');
+      // New pages start on a run of blank rows, so a line of text is never cut.
+      // The run must be taller than the gap between wrapped lines of one entry
+      // (about 5px here), so an entry is never split across pages either.
+      var MIN_GAP = Math.round(9 * k);
+      function blankRow(data, w){ var ink = 0; for (var x = 0; x < w; x += 3) { var i = x * 4; if (data[i] + data[i+1] + data[i+2] < 600) { if (++ink > 2) return false; } } return true; }
+      function findBreak(from, to){
+        var py0 = Math.round(from * k), py1 = Math.round(to * k), w = canvas.width;
+        var img = ctx0.getImageData(0, py0, w, py1 - py0).data, run = 0;
+        for (var r = py1 - py0 - 1; r >= 0; r--) {
+          if (blankRow(img.subarray(r * w * 4, (r + 1) * w * 4), w)) { if (++run >= MIN_GAP) return (py0 + r + Math.round(MIN_GAP / 2)) / k; } else run = 0;
+        }
+        return 0;
+      }
+      while (y < total - 1) {
+        var end = Math.min(total, y + pageCss);
+        if (end < total) { var best = findBreak(y + pageCss * 0.5, end); if (best) end = best; }
+        var hpx = Math.max(1, Math.round((end - y) * k)), pc = document.createElement('canvas');
+        pc.width = canvas.width; pc.height = hpx;
+        var cx = pc.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, pc.width, hpx);
+        cx.drawImage(canvas, 0, Math.round(y * k), canvas.width, hpx, 0, 0, canvas.width, hpx);
+        pages.push({ w: pc.width, h: hpx, jpg: dataUrlBytes(pc.toDataURL('image/jpeg', 0.9)) });
+        y = end;
+      }
+      cleanup();
+      return buildPdf(pages);
+    }, function(err){ cleanup(); throw err; });
+  }
+  function pdfSheet(html){
+    var ov = $('pf-pdf-sheet');
+    if (!ov){
+      ov = document.createElement('div'); ov.id = 'pf-pdf-sheet';
+      ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'pf-pdf-h');
+      ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
+      document.body.appendChild(ov);
+    }
+    ov.innerHTML = '<div class="pf-pdf-panel">' + html + '</div>';
+    return ov;
+  }
+  function timelinePdf(sheet, afterFail){
+    var NAME = String('Pawfolio Timeline - ' + (sheet.who || 'All pets')).replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim() + '.pdf';
+    var old = $('pf-pdf-sheet'); if (old) old.remove();
+    pdfSheet('<h3 id="pf-pdf-h">Making a PDF\u2026</h3><p>' + (afterFail ? 'Printing didn\u2019t open here, so I\u2019m making a PDF you can print or save.' : 'Printing from the Home Screen app goes through a PDF on iPhone.') + '</p>');
+    makePdf(sheet.html).then(function(blob){
+      var file = null; try { file = new File([blob], NAME, { type: 'application/pdf' }); } catch(e){}
+      var canShare = !!(file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+      var url = URL.createObjectURL(blob);
+      var ov = pdfSheet('<h3 id="pf-pdf-h">Your PDF is ready</h3><p>' + (canShare ? 'Tap below, then choose <strong>Print</strong>, or Save to Files to keep a copy.' : 'Open it, then print or save it from there.') + '</p>' +
+        '<div class="pf-pdf-btns">' + (canShare ? '<button type="button" class="pf-pdf-go" id="pf-pdf-share">Print or save PDF</button>' : '') +
+        '<a class="' + (canShare ? 'pf-pdf-alt' : 'pf-pdf-go') + '" id="pf-pdf-open" href="' + url + '" download="' + NAME.replace(/"/g, '') + '" target="_blank" rel="noopener">' + (canShare ? 'Open PDF instead' : 'Open PDF') + '</a>' +
+        '<button type="button" class="pf-pdf-alt" id="pf-pdf-cancel">Cancel</button></div>');
+      var sh = $('pf-pdf-share');
+      if (sh) sh.addEventListener('click', function(){
+        navigator.share({ files: [file], title: NAME.replace(/\.pdf$/, '') }).then(function(){ ov.remove(); }).catch(function(){});
+      });
+      $('pf-pdf-cancel').addEventListener('click', function(){ ov.remove(); });
+    }).catch(function(err){
+      var ov = pdfSheet('<h3 id="pf-pdf-h">Couldn\u2019t make the PDF</h3><p>' + (err && err.message ? String(err.message).replace(/[<>&]/g, '') : 'Something went wrong.') + ' You can open the demo in Safari or Chrome and print from there.</p><div class="pf-pdf-btns"><button type="button" class="pf-pdf-alt" id="pf-pdf-cancel">Close</button></div>');
+      $('pf-pdf-cancel').addEventListener('click', function(){ ov.remove(); });
+    });
+  }
+  window.pfTimelinePdf = function(){ timelinePdf(summarySheet(), false); };
 
   // ---------- wiring ----------
   // The demo's core refreshPetDropdowns() has no knowledge of the Notes form,

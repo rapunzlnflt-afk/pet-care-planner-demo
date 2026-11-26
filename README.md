@@ -34,6 +34,10 @@ These differentiate the demo from the paid full version:
 - **Clients map** (mirrors app v3.42.0): Clients > **Map** shows sample clients as pins around Granbury, TX, with Open client, Directions, Move pin, a "No address yet" list, and Plan a route (Apple Maps on iPhone/iPad iOS 18.4+ with a Google Maps fallback, Google Maps elsewhere). Leaflet is vendored in `vendor/leaflet/` (no CDN) and loads only when the map opens; tiles are OpenStreetMap. Extra sample clients: Priya Patel (42 Sample Harbor Dr), Ben Ortiz (77 Example Ranch Rd) and Casey Morgan (no address). Sample addresses have preset spots (`DEMO_GEO`), so no geocoding request is sent for them; any other address goes through the same OpenStreetMap Nominatim lookup as the app. Moved pins reset on refresh like all demo data. The map sits between the demo banner and buy bar.
 - **Separate clients on shared devices** (mirrors app v3.42.1): a form only updates a client when the clientId and the owner name both match, so two people sending from the same browser get two cards. On a client card, a previous version has **Make this a separate client** (with a confirm), which moves it into its own client card. Try it on Maya Chen's earlier version. Like all demo data, it resets on refresh.
 - **What to include, per pet** (mirrors app v3.45.0): each pet card in Pet Sitter Info has section chips (Feeding, Medications & supplements, Walks & exercise, Potty breaks / Litter box, Habitat & enclosure, Sleep & crate, Grooming, Play & comfort) with species presets. Choices apply to the (disabled) printed sheet and to Send to a Pawfolio sitter. Sample data: Bella has potty and sleep notes; Miso has litter box and play notes, and her walk note is kept but switched off. "Send to a sitter" is now "Send to a Pawfolio sitter".
+- **Pawfolio Handbook link** (demo v3.23.0, mirrors app v3.43.1): the menu has a Pawfolio Handbook button above Check for updates, linking to the same public PDF as the full app (`cleartrackapps.com/pawfolio/Pawfolio-Handbook.pdf`).
+- **Timeline PDF** (demo v3.23.0, mirrors app v3.49.0/v3.50.0): Timeline **Print** stays enabled. When printing can't happen (iOS Home Screen apps, where iOS 27 ignores print; a refused popup in Instagram, Pinterest or Facebook's in-app browser; or print not starting within about a second) the same sheet is turned into a PDF on the device and offered through the share sheet (Print, Save to Files) or Open PDF. html2canvas 1.4.1 (MIT) is vendored in `vendor/html2canvas/` and loads only when needed; nothing is uploaded. Page breaks fall between entries, never inside one. The sitter-sheet Print, and so the sitter PDF fixes in app v3.51.0/v3.52.0, stay out of the demo.
+- **Given on a dose that just went missed** (demo v3.23.0, mirrors app v3.54.0): Given and Skip buttons carry the dose they were drawn for. If the screen sat open past the 90-minute grace (a locked phone), Given records that missed dose at the tap time, with the same rules and Undo as "It was given - record the time", instead of logging the next dose. Skip leaves it missed; the doses-due popup says "Not recorded in time".
+- **Not mirrored on purpose:** pet time zone (app v3.53.0; demo doses are local and reset on refresh, so there is no saved schedule to travel with), device-limit and renewal wording (app v3.53.1; the demo has no license), and saved-vet archive/reorder (app v3.38.0; the demo has no Veterinarians card on Overview).
 
 ## Files
 
@@ -46,7 +50,7 @@ These differentiate the demo from the paid full version:
 ## Releasing a new demo version
 
 1. Bump `<meta name="app-version" content="X.X.X">` (line 9)
-2. Make your changes — keep all 10 restrictions intact
+2. Make your changes — keep all the restrictions above intact
 3. Commit to `main`
 
 GitHub Pages auto-deploys from `main`. Live demo updates ~1 minute after pushing.
